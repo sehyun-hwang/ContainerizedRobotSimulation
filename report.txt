@@ -1,0 +1,59 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 1 files
+Detected 4 issues that require attention
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+File: ddpg.py
+--------------------------------------------------------------------------------
+ddpg.py:90:8: WARNING: *.save requires manual check. (This warning is only applicable if the code saves a tf.Keras model) Keras model.save now saves to the Tensorflow SavedModel format by default, instead of HDF5. To continue saving to HDF5, add the argument save_format='h5' to the save() function.
+ddpg.py:105:19: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+ddpg.py:106:19: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+ddpg.py:107:17: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+================================================================================
+Detailed log follows:
+
+================================================================================
+--------------------------------------------------------------------------------
+Processing file 'ddpg.py'
+ outputting to 'ddpg2.py'
+--------------------------------------------------------------------------------
+
+19:0: INFO: Renamed 'tf.disable_eager_execution' to 'tf.compat.v1.disable_eager_execution'
+28:20: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+31:17: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+32:18: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+33:17: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+35:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+38:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+45:25: INFO: Renamed 'tf.get_collection' to 'tf.compat.v1.get_collection'
+45:43: INFO: Renamed 'tf.GraphKeys' to 'tf.compat.v1.GraphKeys'
+46:25: INFO: Renamed 'tf.get_collection' to 'tf.compat.v1.get_collection'
+46:43: INFO: Renamed 'tf.GraphKeys' to 'tf.compat.v1.GraphKeys'
+47:25: INFO: Renamed 'tf.get_collection' to 'tf.compat.v1.get_collection'
+47:43: INFO: Renamed 'tf.GraphKeys' to 'tf.compat.v1.GraphKeys'
+48:25: INFO: Renamed 'tf.get_collection' to 'tf.compat.v1.get_collection'
+48:43: INFO: Renamed 'tf.GraphKeys' to 'tf.compat.v1.GraphKeys'
+51:29: INFO: Renamed 'tf.assign' to 'tf.compat.v1.assign'
+56:19: INFO: tf.losses.mean_squared_error requires manual check. tf.losses have been replaced with object oriented versions in TF 2.0 and after. The loss function calls have been converted to compat.v1 for backward compatibility. Please update these calls to the TF 2.0 versions.
+56:19: INFO: Renamed 'tf.losses.mean_squared_error' to 'tf.compat.v1.losses.mean_squared_error'
+57:22: INFO: Renamed 'tf.train.AdamOptimizer' to 'tf.compat.v1.train.AdamOptimizer'
+59:24: INFO: Added keywords to args of function 'tf.reduce_mean'
+60:22: INFO: Renamed 'tf.train.AdamOptimizer' to 'tf.compat.v1.train.AdamOptimizer'
+62:22: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+89:16: INFO: Renamed 'tf.train.Saver' to 'tf.compat.v1.train.Saver'
+90:8: WARNING: *.save requires manual check. (This warning is only applicable if the code saves a tf.Keras model) Keras model.save now saves to the Tensorflow SavedModel format by default, instead of HDF5. To continue saving to HDF5, add the argument save_format='h5' to the save() function.
+93:16: INFO: Renamed 'tf.train.Saver' to 'tf.compat.v1.train.Saver'
+97:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+98:18: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+99:16: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+103:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+105:19: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+105:19: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+106:19: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+106:19: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+107:17: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+107:17: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+109:19: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+--------------------------------------------------------------------------------
+

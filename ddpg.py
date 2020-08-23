@@ -8,15 +8,15 @@ tensorflow 1.0
 gym 0.8.0
 """
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import numpy as np
-
 
 LR_A = 0.001    # learning rate for actor
 LR_C = 0.002    # learning rate for critic
 GAMMA = 0.9     # reward discount
 TAU = 0.01      # soft replacement
 
+tf.disable_eager_execution()
 
 class DDPG(object):
     def __init__(self, a_dim, s_dim, a_bound,):
@@ -62,6 +62,7 @@ class DDPG(object):
         self.sess.run(tf.global_variables_initializer())
 
     def choose_action(self, s):
+        s = np.array(s)
         return self.sess.run(self.a, {self.S: s[np.newaxis, :]})[0]
 
     def learn(self):
