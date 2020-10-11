@@ -1,0 +1,27 @@
+<title>Containerized Robot Arm Simulation</title>
+<meta charset="utf-8">
+<link rel="shortcut icon" href="https://cdn.iconscout.com/icon/premium/png-256-thumb/articulated-robot-1524372-1290747.png" />
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/1.6.2/tailwind.min.css" integrity="sha512-mZ+ZnjWE+WxIG8b8Ilysrfq7stpTrGu53lofHJbhuIe6iYmURmoXlZ4ycMN7qQoMhR3qWzVXF/q4N4UKfwmZeQ==" crossorigin="anonymous" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+
+<style>
+    meter:after {
+        content: attr(value);
+        padding-left: 1rem;
+    }
+
+    #Axes>meter {
+        margin: auto 1rem;
+    }
+
+    #Axes>div:last-child>button {
+        background: rgba(72, 187, 120, var(--bg-opacity));
+    }
+
+    #Axes>div:last-child>button:hover {
+        background: rgba(104, 211, 145, var(--bg-opacity));
+    }
+</style>

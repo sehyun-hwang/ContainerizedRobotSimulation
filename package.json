@@ -1,0 +1,37 @@
+{
+    "dependencies": {
+        "apollo-cache-inmemory": "^1.1.0",
+        "apollo-client": "^2.0.3",
+        "apollo-link": "^1.0.3",
+        "apollo-link-http": "^1.2.0",
+        "aws-appsync": "^4.0.0",
+        "aws-sdk": "^2.141.0",
+        "es6-promise": "^4.1.1",
+        "graphql": "^15.3.0",
+        "graphql-tag": "^2.5.0",
+        "isomorphic-fetch": "^2.2.1",
+        "three-csg": "https://github.com/aegggsehyun1994/ThreeCSG#patch-1",
+        "ws": "^7.3.1"
+    },
+    "type": "module",
+    "snowpack": {
+        "mount": {
+            "snowpack": "/"
+        },
+        "install": [
+            "CSG.js"
+        ],
+        "installOptions": {
+            "sourceMap": true
+        },
+        "buildOptions": {
+            "sourceMaps": true
+        },
+        "alias": {
+            "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.js"
+        }
+    },
+    "devDependencies": {
+        "snowpack": "^2.11.1"
+    }
+}

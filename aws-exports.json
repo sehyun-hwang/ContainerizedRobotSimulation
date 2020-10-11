@@ -1,0 +1,8 @@
+{
+    "url": "https://3l6k5yjcijcsxp4a5spiq7hqi4.appsync-api.ap-southeast-1.amazonaws.com/graphql",
+    "region": "ap-southeast-1",
+    "auth": {
+        "type": "API_KEY",
+        "apiKey": "da2-uppzciihfzdszp7j7yadiuek7y"
+    }
+}

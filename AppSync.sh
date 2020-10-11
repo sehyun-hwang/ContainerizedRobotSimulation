@@ -1,0 +1,1 @@
+ aws appsync get-introspection-schema --api-id hufnu23tyrcuvpiln465ld3uj4 --format SDL schema.graphql

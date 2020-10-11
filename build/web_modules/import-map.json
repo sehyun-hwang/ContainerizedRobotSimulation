@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "three-csg": "./three-csg.js"
+  }
+}
