@@ -14,6 +14,9 @@
         "ws": "^7.3.1"
     },
     "type": "module",
+    "scripts": {
+        "serve": "docker run -it --rm -p 8000:80 -v $PWD/nginx.conf:/etc/nginx/nginx.conf -v $PWD:/usr/share/nginx/html:ro nginx:alpine"
+    },
     "snowpack": {
         "mount": {
             "snowpack": "/"

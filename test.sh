@@ -1,3 +1,4 @@
-if [ -z $CACHE ] && [ -d /etc/apt/apt.conf.d ]; then
-    printf 'Acquire::HTTP::Proxy "http://apt.network:3142";\nAcquire::HTTPS::Proxy "false";' >> /etc/apt/apt.conf.d/01proxy
-fi
+for JS in *.js; do
+	sed 's/<script/<script src="..\/'$JS'"/' tests/Template.html > \
+	tests/`echo $JS | sed 's/.js//'`.html
+done

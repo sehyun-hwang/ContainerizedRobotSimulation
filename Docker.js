@@ -1,11 +1,13 @@
 const { io } = window;
-import { Log, Socket } from './index.js';
+import { Log } from './2d-utils.js';
 
 const MyURL = Subdomain => window.location.hostname.replace(/.+?\./, Subdomain + '.');
-let socket, interval;
+const Subdomain = document.querySelector('#Subdomain')
+let socket, interval, test;
+export const Test = () => test = true;
 
-function Reset() {
-    Log('Reset');
+export function Reset() {
+    Log('Docker reset');
     socket && socket.disconnect();
     clearInterval(interval);
 
@@ -15,61 +17,64 @@ function Reset() {
     window.history.pushState({ path }, '', path);
 }
 
-const Handler = data => {
-    if(!data) return Reset();
-
-    const Container = /-(.*)/.exec(data)[1];
-    socket = io((url => {
-        url.search = new URLSearchParams({
-            Container: data,
-        }).toString();
-        const path = url.toString();
-        window.history.pushState({ path }, '', path);
-
-        url.pathname = '/Browser';
-        url.search = '';
-        url.hostname = MyURL('kbdlab');
-        url = url.toString();
-        return url;
-    })(new URL(window.location)), {
-        transports: ['websocket'],
-        query: { Container }
+const IsYonsei = fetch('https://www.cloudflare.com/cdn-cgi/trace')
+    .then(res => res.text())
+    .then(data => {
+        const text = 'ip=165.132.138.';
+        return data.split('\n').find(x => x.startsWith(text));
     });
 
-    socket.on('disconnect', Reset);
-    socket.on('connect', () => {
-        Log('Connected to', Container);
+export const Handler = (data = new URLSearchParams(window.location.search).get('Container')) => IsYonsei
+    .then(isYonsei => {
+        if (!data) return Reset();
+        socket && socket.disconnect();
 
-        clearInterval(interval);
-        interval = setInterval(() => {
-            const data = ['test', '123123'];
-            Log("Emited", data);
-            socket.emit('Container', data);
-        }, 1000);
+        const Container = data.split('-').pop();
+        Log(Container);
+        socket = io((url => {
+            url.search = new URLSearchParams({
+                Container: data,
+            }).toString();
+            const path = url.toString();
+            window.history.pushState({ path }, '', path);
+
+            url.pathname = '/Browser';
+            url.search = '';
+            url.hostname = MyURL(isYonsei ? 'yonsei' : 'kbdlab');
+            if (Subdomain === 'kbdlab')
+                url.port = 8443;
+            url = url.toString();
+            return url;
+        })(new URL(window.location)), {
+            transports: ['websocket'],
+            query: { Container }
+        });
+
+        socket.on('disconnect', Reset);
+        test && socket.on('connect', () => {
+            Log('Connected to', Container);
+
+            clearInterval(interval);
+            interval = setInterval(() => {
+                const data = ['test', '123123'];
+                Log("Emited", data);
+                socket.emit('Container', data);
+            }, 1000);
+        });
+
+        socket.on('Log', data => Log('Log:', data));
+
+        return socket;
     });
 
-    socket.on('Log', data => Log('Log:', data));
-    Socket.then(fn => fn(socket));
-};
-
-Handler(new URLSearchParams(window.location.search).get('Container'));
-
-window.test = () => fetch(`https://${MyURL('proxy')}/robot/docker`)
+export default (body, Subdomain) => Promise.resolve(body)
+    .then(JSON.stringify)
+    .then(body => fetch(`https://${MyURL('proxy')}/robot/docker?` + new URLSearchParams({ Subdomain }), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body
+    }))
     .then(res => res.text())
     .then(Handler);
-
-window.EV3 = function () {
-    Reset();
-
-    socket = io((url => {
-        url.pathname = '/EV3';
-        url.search = '';
-        url.hostname = MyURL('kbdlab');
-        url = url.toString();
-        return url;
-    })(new URL(window.location)), {
-        transports: ['websocket'],
-    });
-
-    Socket.then(fn => fn(socket));
-};
