@@ -7,6 +7,7 @@ const Paths = {
     MeshSurfaceSampler: 'math/MeshSurfaceSampler.js',
     CSG: './build/web_modules/three-csg.js',
     CANNON: 'https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js',
+    OBJLoader: 'loaders/OBJLoader.js',
 };
 
 export default modules => Promise.all(modules.map(module => {
@@ -27,5 +28,5 @@ export default modules => Promise.all(modules.map(module => {
     }
 
     return import (Base + Path)
-        .then(Module => Module.default || window[module] || Module);
+        .then(Module => Module.default || (Object.keys(Module).length ? Module : window[module]));
 }))

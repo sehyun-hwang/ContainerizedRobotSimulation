@@ -2,6 +2,7 @@ const { io } = window;
 import { Log } from './2d-utils.js';
 
 const MyURL = Subdomain => window.location.hostname.replace(/.+?\./, Subdomain + '.');
+const Subdomain = document.querySelector('#Subdomain')
 let socket, interval, test;
 export const Test = () => test = true;
 
@@ -26,9 +27,10 @@ const IsYonsei = fetch('https://www.cloudflare.com/cdn-cgi/trace')
 export const Handler = (data = new URLSearchParams(window.location.search).get('Container')) => IsYonsei
     .then(isYonsei => {
         if (!data) return Reset();
+        socket && socket.disconnect();
 
         const Container = data.split('-').pop();
-        console.log(Container);
+        Log(Container);
         socket = io((url => {
             url.search = new URLSearchParams({
                 Container: data,
@@ -39,6 +41,8 @@ export const Handler = (data = new URLSearchParams(window.location.search).get('
             url.pathname = '/Browser';
             url.search = '';
             url.hostname = MyURL(isYonsei ? 'yonsei' : 'kbdlab');
+            if (Subdomain === 'kbdlab')
+                url.port = 8443;
             url = url.toString();
             return url;
         })(new URL(window.location)), {
@@ -63,6 +67,14 @@ export const Handler = (data = new URLSearchParams(window.location.search).get('
         return socket;
     });
 
-export default query => fetch(`https://${MyURL('proxy')}/robot/docker?` + new URLSearchParams(query))
+export default (body, Subdomain) => Promise.resolve(body)
+    .then(JSON.stringify)
+    .then(body => fetch(`https://${MyURL('proxy')}/robot/docker?` + new URLSearchParams({ Subdomain }), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body
+    }))
     .then(res => res.text())
     .then(Handler);

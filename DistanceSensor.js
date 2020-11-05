@@ -11,6 +11,7 @@ const DistanceSensors = data => {
     sensors = data;
 };
 
+
 window.addEventListener('DOMContentLoaded', () => {
     const element = document.querySelector('#DistanceSensors');
     const Parse = () => element.value.trim().split('\n').filter(x => x)

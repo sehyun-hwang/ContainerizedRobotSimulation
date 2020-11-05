@@ -15,12 +15,14 @@ from socket import gethostname as Host
 import numpy as np
 import json
 
+
 def default(obj):
     if isinstance(obj, np.ndarray):
         return obj.tolist()
     #if isinstance(value, date):
     #    return value.replace(tzinfo=timezone.utc).timestamp()
     raise TypeError(type(obj) + 'is not serializable')
+
 
 class JSON:
     @staticmethod
@@ -31,8 +33,8 @@ class JSON:
     def loads(*args, **kwargs):
         return json.loads(*args, **kwargs)
 
-namespace = '/Container'
 
+namespace = '/Container'
 """
 class CustomNamespace(Namespace):
     def on_test(self, data, callback=Callback):
@@ -56,6 +58,7 @@ io = IO(json=JSON())
 
 Emit = lambda *args: io.emit('Container', list(args), namespace=namespace)
 
+
 def On(value, key=''):
     global io, namespace
 
@@ -69,8 +72,7 @@ def On(value, key=''):
     def handler(data):
 
         fn = value if isFn else getattr(value, data[0])
-        kwargs = data.pop() if len(data) and isinstance(data[-1],
-                                                        dict) else {}
+        kwargs = data.pop() if len(data) and isinstance(data[-1], dict) else {}
         args = data[0 if isFn else 1:]
 
         print(fn.__name__, args, kwargs)
@@ -79,12 +81,10 @@ def On(value, key=''):
             print(result)
         except BaseException as error:
             print(error)
-            result = {
-                "error": repr(error),
-                "stack": traceback.format_exc()
-            }
+            result = {"error": repr(error), "stack": traceback.format_exc()}
 
         return result
+
 
 def Learn(var):
     print(model.memory_counter, model.memory_size)
@@ -93,14 +93,14 @@ def Learn(var):
         model.learn()
     return var
 
+
 def main():
     global io
     io.sleep(1)
 
     host = Host()
-    host = 'http://{}{}?Container={}&KeepAlive=1'.format(
-        'localhost' if 'hwangsehyun' in host else 'express.network',
-        ':8080' if UID() else '', host.replace('.network', ''))
+    host = 'http://' + ('localhost' if 'hwangsehyun' in host else 'express.network') + \
+    (':8080' if UID() else '') + f"?Container={host.replace('.network', '')}&KeepAlive=1"
     print('Host:', host)
 
     io.connect(host, namespaces=[namespace])
@@ -112,9 +112,9 @@ def main():
     #get_event_loop().run_until_complete(self.main())
 
 
-
 if __name__ == '__main__':
-    actions, states = map(lambda x: int(environ[x]), 'ACTIONS STATES'.split(' '))
+    actions, states = map(lambda x: int(environ[x]),
+                          'ACTIONS STATES'.split(' '))
     print('actions', actions, 'states', states)
     model = DDPG(actions, states, 1)
     On(model, "model")

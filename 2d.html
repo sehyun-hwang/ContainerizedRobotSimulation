@@ -9,15 +9,55 @@
     <body class="flex flex-col h-screen overflow-hidden">
         <div class="flex-none flex bg-gray-200">
             <div class="flex flex-col text-white">
-                <button onclick="EmotivOrigin()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-blue-500 hover:bg-blue-400">Emotiv Origin</button>
+                <button onclick="EmotivOrigin()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-blue-500 hover:bg-blue-400">Emotiv<br/>Origin</button>
                 <button onclick="Reset()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-yellow-500 hover:bg-yellow-400">Reset</button>
                 <button onclick="Run()" class="m-4 px-2 py-4 shadow rounded-full bg-green-500 hover:bg-green-400 ">Run</button>
             </div>
 
-            <div class="mx-4">
-                <p>Coordinates of</p>
-                <p>distance sensors</p>
-                <textarea id="DistanceSensors" class="shadow">
+            <div class="flex-wrap flex-shrink-0 flex-grow relative mx-4 pr-4" style="flex-basis: 15rem; max-height: 90vh">
+                <div id="UIMode" class="absolute w-full h-full pr-4 overflow-y-scroll max-h-full">
+                    <accordion-shadow title="RL Server Settings">
+                        </label>Server Endpoint</label>
+                        <select id="Subdomain" class="w-full mb-5 px-4 py-2 appearance-none bg-white border border-gray-400 hover:border-gray-500 rounded shadow">
+                            <option selected>yonsei</option>
+                            <option>kbdlab</option>
+                            <option>iptime</option>
+                        </select>
+                    </accordion-shadow>
+
+                    <accordion-shadow title="Arm Settings">
+                        <label>Speed of the Arm</label>
+                        <input id="ArmSpeed" type="range" value="3" step="0.01" max="3" />
+                        <label>Action Per Step of the Arm</label>
+                        <input id="ActionPerStep" type="range" value="1" min="1" />
+
+                        <label>Speed of the Object</label>
+                        <input id="CannonSpeed" type="range" step="0.01" max="1" />
+                    </accordion-shadow>
+
+                    <accordion-shadow title="Target Object Settings">
+                        <select id="CannonObject" class="w-full mb-5 px-4 py-2 appearance-none bg-white border border-gray-400 hover:border-gray-500 rounded shadow">
+                            <option selected>Box</option>
+                            <option>TorusKnotGeometry</option>
+                        </select>
+
+                        <button onclick="OBJLoader()" class="w-full mb-3 p-2 text-white shadow bg-blue-500 hover:bg-blue-400">Load a Sample Teapot .obj</button>
+
+                        <label>Load a .obj File</label>
+                        <input type="file" class="w-full" onchange="OBJLoader(this.files[0])" />
+
+                        <label># of Faces</label>
+                        <input id="ObjFaces" type="range" min="10" max="1000" value="100" />
+
+                        <label>Set x of Target Object</label>
+                        <input id="Cannonx" type="range" step="0.1" max="10" />
+                    </accordion-shadow>
+
+
+                    <accordion-shadow title="Sensors" class="bg-white">
+                        <p>Coordinates of</p>
+                        <p>distance sensors</p>
+                        <textarea id="DistanceSensors" class="shadow">
 -1 -1 -0.3
 -1 0 -0.3
 -1 1 -0.3
@@ -28,9 +68,8 @@
 1 1 -0.3
 
                 </textarea>
-
-                <p>Set x of Target Object</p>
-                <input id="x" onchange="setX(this.value)" type="number" step="0.1" />
+                    </accordion-shadow>
+                </div>
             </div>
 
             <div id="Controls">
@@ -38,19 +77,25 @@
                 <div id="Buttons"></div>
             </div>
 
-            <div class="h-full text-center align-middle" style="line-height: 5">
-                <p class="leading-normal">Joints</p>
+            <div class="h-full text-center align-middle whitespace-no-wrap" style="line-height: 5">
+                <p style="line-height: 4">Joints</p>
                 <p>Length [m]</p>
                 <p>Control Input</p>
             </div>
 
-            <form id="Axes" onchange="UpdateArm()" class="flex">
-                <div class="w-24 ml-2">
+            <form id="Axes" onchange="UpdateArm()" class="flex flex-grow overflow-x-scroll">
+                <div class="w-24 ml-2 flex-none">
                     <button type="button" onclick="UpdateArm(this.parentNode)" class="w-full py-2 text-white bg-blue-500 hover:bg-blue-400">Add</button>
-                    <input type="number" min="0" step="0.1" value="1" placeholder="Length" class="w-full appearance-none mt-4 p-2 border rounded shadow focus:shadow-outline" />
+                    <input type="number" name="length" min="0" step="0.1" value="1" placeholder="Length" class="w-full appearance-none mt-4 p-2 border rounded shadow focus:shadow-outline" />
+                    <angle-input></angle-input>
                     <meter class="w-full mt-8" min="-1" max="1" value="0"></meter>
                 </div>
             </form>
+        </div>
+
+        <div id="UIModeButtons" class="relative mx-auto h-0" style="z-index: 1">
+            <button onclick="UIMode(-1)" class="absolute bottom-0 px-3 bg-white rounded-full rounded-b-none">&#9650;</button>
+            <button onclick="UIMode(1)" class="px-3 bg-white rounded-full rounded-t-none"> &#9660;</button>
         </div>
 
         <div id="three" class="relative flex-grow">

@@ -1,6 +1,10 @@
 import { THREE, Z, scene, camera, renderer, orbit, Load } from './three.js';
 //import Geometries from './Geometries.js';
 //import Shape2Mesh from './canon-shape2mesh.js';
+
+let speed = 1;
+export const CannonSpeed = _speed => speed = _speed;
+
 const CopyVector = (src, dsc) => dsc.set(...src.toArray());
 
 function CopyObject(src, dsc) {
@@ -8,15 +12,36 @@ function CopyObject(src, dsc) {
     dsc.quaternion.set(...src.quaternion.toArray());
 }
 
-function LineWithBuffer(type, args) {
-    const Buffer = THREE[type.replace('Geometry', 'BufferGeometry')];
+function LineWithBuffer(type, args = []) {
+    let Buffer, NonBuffer;
 
-    if (!Buffer)
+    if (typeof type === 'string') {
+        NonBuffer = new THREE[type](...args);
+        Buffer = new THREE[type.replace('Geometry', 'BufferGeometry')](...args);
+    }
+    else {
+        const [{ geometry }] = type.children;
+
+        if (!'BufferGeometry' === geometry.type)
+            throw new Error('Unsupported .obj');
+
+        NonBuffer = new THREE.Geometry();
+        NonBuffer.fromBufferGeometry(geometry);
+        Buffer = geometry;
+    }
+
+    if (Buffer && NonBuffer);
+    else
         throw new Error('Unsupported type: ' + type);
 
-    const geometry_scene = new THREE.LineSegments(new THREE.WireframeGeometry(new Buffer(...args)));
+    console.log(NonBuffer, Buffer);
+    const geometry_scene = new THREE.LineSegments(
+        new THREE.WireframeGeometry(Buffer),
+        new THREE.LineBasicMaterial({
+            color: new THREE.Color(...Array.from({ length: 3 }, () => Math.random() / 2 + .5)),
+        }));
     const geometry_nonbuffer = new THREE.Mesh(
-        new THREE[type](...args),
+        NonBuffer,
         new THREE.MeshBasicMaterial({
             visible: false,
         }));
@@ -28,25 +53,44 @@ function LineWithBuffer(type, args) {
     return [geometry_nonbuffer, object];
 }
 
-let CANNON, OnChange, changed;
+let CANNON, OnChange;
 
-export const Changed = () => changed = true;
+let _object2, setX, AttachStep;
+export const Cannonx = x => setX(x);
+export const Changed = () => AttachStep();
 
-let _setX;
-export const setX = new Promise(resolve => _setX = resolve);
+let timer = 0;
 
-export const object = Load(['CANNON', 'CSG', 'OBB', 'TransformControls'])
-    .then(([_CANNON, CSG, OBB, { TransformControls }]) => {
+const init = Load(['CSG', 'TransformControls', 'CANNON'])
+    .then(Modules => {
+        const [CSG, { TransformControls }, _CANNON] = Modules;
         CANNON = _CANNON;
-        const [geometry, object] = LineWithBuffer('TetrahedronGeometry', [.5]);
 
+        const [geometry, object] = LineWithBuffer('TetrahedronGeometry', [.5]);
         const transformControls = new TransformControls(camera, renderer.domElement);
         orbit.WithTransformControls(transformControls);
         transformControls.attach(object);
         transformControls.showZ = false;
         scene.add(transformControls);
 
-        const [geometry2, object2] = LineWithBuffer('TorusKnotGeometry', [3, 1, 40, 10]);
+        return { CSG, geometry, object, transformControls };
+    });
+
+const DefaultGeometryArgs = {
+    TorusKnotGeometry: [3, 1, 40, 10],
+    BoxGeometry: [3, .5, 3],
+}
+
+export const CannonObject = (Custom = 'BoxGeometry') => init.then(({
+        CSG,
+        geometry,
+        object,
+        transformControls,
+    }) => {
+        console.log({ Custom });
+        _object2 && scene.remove(_object2);
+        const [geometry2, object2] = LineWithBuffer(Custom, DefaultGeometryArgs[Custom]);
+        _object2 = object2;
 
         const Dots = new THREE.Geometry();
         scene.add(new THREE.Points(
@@ -64,6 +108,9 @@ export const object = Load(['CANNON', 'CSG', 'OBB', 'TransformControls'])
 
         let Intersection;
         OnChange = async function () {
+            console.log('OnChange');
+            console.time(++timer);
+
             Intersection && scene.remove(Intersection);
             Intersection = CSG.intersect(geometry, geometry2, material);
 
@@ -81,7 +128,7 @@ export const object = Load(['CANNON', 'CSG', 'OBB', 'TransformControls'])
             return magnitude * vector.cross(position).z;
         };
 
-        transformControls.addEventListener('change', () => changed = true);
+        transformControls.addEventListener('change', Changed);
 
         return [object, object2];
     })
@@ -109,36 +156,46 @@ export const object = Load(['CANNON', 'CSG', 'OBB', 'TransformControls'])
                 axisB: new CANNON.Vec3(0, 0, 1)
             });
 
-        _setX(x => {
-            console.log('setX', x);
-            body.position.x = x;
-            constraint.pivotA.x = x;
-            constraint.update();
-            changed = true;
-        });
-
         //world.gravity.set(1, 1, -1);
         world.addBody(body);
         constraint.enableMotor();
         world.addConstraint(constraint);
 
-        const Step = (delta = 0) => {
-            console.log('Step');
-            world.step(delta);
-            CopyObject(body, object2);
-            changed && OnChange().then(magnitude => {
-                constraint.setMotorSpeed(-magnitude);
-                if (body.angularVelocity.almostZero()) changed = false;
-            });
-            AttachStep();
-        };
+        {
+            const element = renderer.domElement;
+            const event = 'Render';
+            let Finished;
 
-        const AttachStep = () => {
-            
-            renderer.domElement.addEventListener('Render', { once: false }, ({ detail }) => Step(detail));
-        };
+            const Step = (delta = 0) => {
+                console.log('Step');
+                world.step(delta);
+                CopyObject(body, object2);
 
-        setX.then(setX => setX(5)).then(Step);
+                OnChange().then(magnitude => {
+                    constraint.setMotorSpeed(-magnitude * speed);
+                    console.log({ magnitude });
+                    body.angularVelocity.almostZero() ? Finished() : AttachStep();
+                    console.timeEnd(timer);
+                });
+            };
+
+            const Handler = ({ detail }) => Step(detail);
+            AttachStep = () => {
+                element.removeEventListener(event, Handler);
+                element.addEventListener(event, Handler, { once: true });
+                return new Promise(resolve => Finished = resolve);
+            };
+
+            setX = x => {
+                console.log('setX', x);
+                body.position.x = x;
+                constraint.pivotA.x = x;
+                constraint.update();
+                return AttachStep();
+            };
+
+            setX(5).then(Step);
+        }
 
         return object;
     });

@@ -24,7 +24,7 @@ function Gamepad() {
 
     //console.log(gamepad.axes);
     const Angles = axes.reduce((accum, cur, i) => {
-        const Axis = gamepad.axes[cur];
+        let Axis = gamepad.axes[cur];
         if (i === 3)
             Axis = (1 - Axis) / 2;
         const element = Meters[i];

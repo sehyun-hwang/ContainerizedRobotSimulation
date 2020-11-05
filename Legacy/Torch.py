@@ -2,11 +2,6 @@ from json import load
 import torch
 import requests
 
-def imshow(binary):
-    requests.post('https://proxy.hwangsehyun.com/imshow/',
-                  files={"File": binary})
-
-
 with open('robot.json') as file:
     Data = load(file)
 #print(Data)
@@ -15,7 +10,6 @@ print(length)
 
 Path = 'model.pt'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 
 dim = 6
 H = 12

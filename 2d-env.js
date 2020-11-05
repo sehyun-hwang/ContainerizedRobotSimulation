@@ -1,9 +1,13 @@
 import { THREE, scene } from './three.js';
 import { Log } from './2d-utils.js';
-import { object, Changed } from './cannon.js';
+
 
 const DEG2RAD = deg => deg / 180 * Math.PI;
-const speed = 1;
+const RAD2DEG = rad => rad * 180 / Math.PI;
+
+let speed = DEG2RAD(1);
+export const ArmSpeed = _speed => speed = DEG2RAD(_speed);
+
 const Random = () => Math.random() * 2 - 1;
 
 export const Target = new THREE.Mesh(
@@ -14,8 +18,10 @@ scene.add(Target);
 
 export class Arm {
 
-    constructor(lengths) {
-        this.lengths = lengths;
+    constructor(lengths, rotations) {
+        const obj = { lengths, rotations };
+        Log(obj);
+        Object.assign(this, obj)
         this.Reset();
 
         const geometry = new THREE.Geometry();
@@ -29,6 +35,7 @@ export class Arm {
             geometry,
             line,
             Emitter: document.createElement('div'),
+            Arrows: [],
         });
     }
 
@@ -48,9 +55,8 @@ export class Arm {
         const { geometry, Nodes } = this;
         geometry.setFromPoints(Nodes);
         geometry.verticesNeedUpdate = true;
-        object.then(object => object.position.copy(Nodes[Nodes.length - 1]));
 
-        return this.Emit(this.Render);
+        return this.Emit(this.Render, this.Nodes);
     }
 
     Reset() {
@@ -61,26 +67,27 @@ export class Arm {
         Target.verticesNeedUpdate = true;
         Object.assign(this, { target });
 
-        const Nodes = this.lengths.reduce((accum, cur) => {
+        this.state = Array(this.lengths.length).fill(0);
+        this.Nodes = this.lengths.reduce((accum, cur) => {
             accum.push(cur + accum[accum.length - 1]);
             return accum;
-        }, [0]);
-        Log('Reset', Nodes);
-
-        this.Nodes = Nodes.map(x => new THREE.Vector3(x));
+        }, [0]).map(x => new THREE.Vector3(x));
         this.geometry && this.Render();
     }
 
-    State() {
-        const prevs = this.Nodes.Between().map(([cur, next]) => next.clone().sub(cur));
-        const state = [this.X, ...prevs].Between()
-            .reduce((accum, [cur, next]) => {
-                const angle = cur.angleTo(next);
-                accum.push(angle === Math.PI ? 0 : angle);
-                return accum;
-            }, []);
+    Statde() {
+        const state =
+            /*const prevs = this.Nodes.Between().map(([cur, next]) => next.clone().sub(cur));
 
-        Object.assign(this, { prevs, state });
+
+            const state = [this.X, ...prevs].Between()
+                .reduce((accum, [cur, next]) => {
+                    const angle = cur.angleTo(next);
+                    accum.push(angle === Math.PI ? 0 : angle);
+                    return accum;
+                }, []);*/
+
+            Object.assign(this, { state });
 
         return state;
     }
@@ -91,23 +98,50 @@ export class Arm {
         if (!angles.every(x => typeof x === 'number'))
             throw new Error('angle is not a number: ' + angles);
 
-        Log('state', this.State());
-        const { prevs } = this;
-        angles = angles.slice(0, this.lengths.length)
-            .reduce((accum, cur) => {
-                accum.push(cur + (accum[accum.length - 1] || 0));
-                return accum;
-            }, []);
-        //console.log({ prevs, angles });
 
-        this.Nodes = prevs.reduce((accum, cur, i) => {
-            accum.push(accum[accum.length - 1].clone()
-                .add(cur.applyAxisAngle(this.Z, speed * DEG2RAD(angles[i]))));
+        console.group();
+        const state = angles.slice(0, this.lengths.length).map((x, i) => speed * x + this.state[i]);
+        console.log(state);
+
+        const con = //Array(10).fill(90)
+            [0, 90, 90, 0]
+            .map(DEG2RAD);
+
+        const Vector = this.Z.clone();
+        const Quaternion = new THREE.Quaternion().setFromAxisAngle(Vector, 0);
+        const QuaternionTemp = new THREE.Quaternion();
+        const QuaternionTemp2 = new THREE.Quaternion();
+
+        let Node = this.X;
+
+        this.Arrows.forEach(x => scene.remove(x));
+        const Arrows = [];
+
+
+        let Nodes = this.lengths.map((x, i) => {
+            QuaternionTemp.setFromAxisAngle(Node.clone().normalize(), con[i]);
+            Vector.applyQuaternion(QuaternionTemp);
+            QuaternionTemp2.setFromAxisAngle(Vector, state[i]);
+
+            const Arrow = new THREE.ArrowHelper(Vector);
+            scene.add(Arrow);
+            Arrows.push(Arrow);
+
+            Node = Node.clone().setLength(x).applyQuaternion(QuaternionTemp2);
+            return Node;
+        });
+
+        Nodes = Nodes.reduce((accum, cur) => {
+            accum.push(accum[accum.length - 1].clone().add(cur));
             return accum;
         }, [new THREE.Vector3()]);
 
-        Changed();
+        Arrows.forEach(({ position }, i) => position.copy(Nodes[i]));
 
+        Object.assign(this, { Arrows, state, Nodes });
+
+        console.log(state);
+        console.groupEnd();
         return this.Render();
     }
 

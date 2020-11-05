@@ -4,8 +4,11 @@
 <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/1.6.2/tailwind.min.css" integrity="sha512-mZ+ZnjWE+WxIG8b8Ilysrfq7stpTrGu53lofHJbhuIe6iYmURmoXlZ4ycMN7qQoMhR3qWzVXF/q4N4UKfwmZeQ==" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cloudfront.hwangsehyun.com/utils/Accordion.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/angle-input@0.0.1/angle-input.css" />
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/angle-input@0.0.1/dist/angle-input.js"></script>
 
 <style>
     meter:after {
@@ -23,5 +26,13 @@
 
     #Axes>div:last-child>button:hover {
         background: rgba(104, 211, 145, var(--bg-opacity));
+    }
+
+    ::-webkit-scrollbar {
+        width: 1rem;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: grey;
     }
 </style>

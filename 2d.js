@@ -1,64 +1,16 @@
-import { renderer } from './three.js';
 import { Log, Storage } from './2d-utils.js';
-import { Arm, Target } from './2d-env.js';
+import { Arm, Target, ArmSpeed } from './2d-env.js';
 import Docker, { Handler as DockerHandler, Reset as DockerReset } from './2d-Docker.js';
-import DistanceSensor from './DistanceSensor.js';
+//import DistanceSensor from './DistanceSensor.js';
 import { Meters } from './Controller.js';
 import { init as Wasm_init, Random } from './wasm.js';
-import { setX } from './cannon.js';
+import UI from './RangeInput.js';
+//import { CannonSpeed, Changed, Cannonx, CannonObject } from './cannon.js';
 
+//import Emotiv from './Emotiv/export.js'
+//Emotiv(Angles => renderer.domElement.addEventListener('Render', () => arm.Angles(Angles), { once: true }))
 
-import Emotiv from './Emotiv/Emotiv.js';
-import { Fresh } from './Emotiv/IndexedDB.js';
-
-{
-    const DeadZone = .3;
-    const Speed = .15;
-
-    let Origin;
-    let SetOrigin = true;
-    window.EmotivOrigin = () => SetOrigin = true;
-
-    const Emitter = document.createElement('div');
-
-    Promise.all([Fresh(), Emotiv(Emitter)])
-        .then(function ([Transaction]) {
-            let Angles;
-
-            Emitter.addEventListener('met', ({ detail }) => {
-                console.warn(detail);
-
-                /*Transaction().store.add({
-                    timestamp: Date.now(),
-                    pow: detail,
-                });*/
-
-            });
-
-            Emitter.addEventListener('mot', ({ detail }) => {
-                //console.warn(detail);
-                if (SetOrigin) {
-                    Origin = detail;
-                    SetOrigin = false;
-                }
-
-                detail = detail.map((x, i) => x - Origin[i]);
-                const detailAbs = detail.map(Math.abs);
-                const Max = Math.max(...detailAbs);
-                const Index = detailAbs.indexOf(Max);
-
-                Angles = Array(detail.length).fill(0);
-                if (Max > DeadZone) {
-                    Angles[Index] = detail[Index] * Speed;
-                }
-
-                Log('Emotiv Angle', Angles);
-            });
-
-            renderer.domElement.addEventListener('Render', () => arm.Angles(Angles));
-        });
-}
-
+import OBJLoader from './OBJLoader.js';
 
 const STDDEV = 2.5;
 
@@ -67,7 +19,7 @@ console.log(Axes);
 
 const storage = new Storage('Arm');
 
-let arm;
+let cannon, arm, state;
 
 function Render(lengths) {
     console.log('Render', lengths);
@@ -86,16 +38,34 @@ function Render(lengths) {
     Meters(Axes.querySelectorAll('meter'));
 }
 
-let State;
+const State = (class {
+
+    Coordinates(Coordinates) {
+        return Coordinates
+    }
+
+    DistanceSensor(Coordinates) {
+        return [
+            ...DistanceSensor(Coordinates.slice(-4, -2)),
+            ...arm.target
+        ]
+    }
+
+    Manipulation(Coordinates) {
+
+    }
+
+}).prototype;
 
 function UpdateArm(element) {
     console.log("UpdateArm");
 
     const Add = element && element.parentNode.lastElementChild === element;
     element && !Add && element.remove();
-    const lengths = Array.prototype.map.call(Axes.querySelectorAll('input'), ({ value }) => Number(value));
+
+    const lengths = Array.prototype.map.call(Axes.querySelectorAll('input[name="length"]'), ({ value }) => Number(value));
     Add || lengths.pop();
-    console.log(lengths);
+    Log({ lengths });
     storage.Set(lengths);
     element && Render(lengths);
 
@@ -103,18 +73,25 @@ function UpdateArm(element) {
     arm = new Arm(lengths);
 
     arm.On('Render', function () {
+        console.log('arm OnRender');
         const Coordinates = [...arm.Nodes.slice(1)
-            .map(x => x.toArray().slice(0, 2))
-            .flat(),
+            .map(x => x.toArray().slice(0, 2)).flat(),
             ...arm.target
         ];
 
-        State = [
-            ...DistanceSensor(Coordinates.slice(-4, -2)),
-            ...arm.target
-        ];
+        state = State.Coordinates(Coordinates);
+        Log({ state });
 
         Object.assign(arm, { Coordinates });
+
+        if (cannon) {
+            const { Nodes } = arm;
+            Changed()
+                .then(() => {
+                    cannon.position.copy(Nodes[Nodes.length - 1])
+                    console.log(cannon.position)
+                });
+        }
     });
 
     return arm.Render();
@@ -129,7 +106,7 @@ function Reward() {
     return 0.5 - Target.position.distanceTo(Nodes[Nodes.length - 1]);
 }
 
-let Break;
+let Break, actionPerStep = 1;
 
 function EmitFactory(socket) {
     const Emit = socket.emit.bind(socket, 'Container');
@@ -163,7 +140,7 @@ function EmitFactory(socket) {
 }
 
 async function Ep(Emit, EmitPromise, stddev = STDDEV) {
-    const state = State;
+    const last_state = state;
     //const state=arm.Coorinates;
 
     let angles = await EmitPromise('model', 'choose_action', state);
@@ -174,12 +151,14 @@ async function Ep(Emit, EmitPromise, stddev = STDDEV) {
     if (reward > 0.3)
         return;
 
-    await arm.Angles(angles);
+    for (let i = 0; i < actionPerStep; i++)
+        await arm.Angles(angles);
+
     const obj = {
-        state,
+        last_state,
         angles,
         reward,
-        next_state: State //arm.Coordinates,
+        next_state: state //arm.Coordinates,
     };
     Log({ angles, ...obj });
 
@@ -192,10 +171,11 @@ async function Ep(Emit, EmitPromise, stddev = STDDEV) {
 
 async function main(socket) {
     if (!socket) return;
+    Break = false;
 
     Log('Handler attatched to socket');
 
-    console.log(State);
+    console.log(state);
     socket.on('ContainerConnect', console.log);
     //return;
 
@@ -204,6 +184,7 @@ async function main(socket) {
 
     await Wasm_init(arm.lengths.length);
     const EpBinded = Ep.bind(undefined, ...EmitFactory(socket));
+    const errors = [];
 
     for (let ep = 0;; ep++) {
         let stddev;
@@ -215,7 +196,7 @@ async function main(socket) {
                 Break = false;
                 return;
             }
-
+            console.log(socket);
             Log({ ep, step });
 
             try {
@@ -225,8 +206,13 @@ async function main(socket) {
                 stddev = _stddev;
             }
             catch (error) {
-                console.warn(error);
-                console.error(new Error(error));
+                console.warn(new Error(error));
+                if (errors.includes(error)) {
+                    console.error('Terminating due to a reoccurring error');
+                    return;
+                }
+                error && errors.push(error);
+
                 arm.Reset();
                 console.log('Retrying a new ep');
                 ep--;
@@ -236,31 +222,48 @@ async function main(socket) {
             //await new Promise(resolve => setTimeout(resolve, 10));
         }
     }
+
+    socket.close();
 }
+
 
 
 Object.assign(window, {
     UpdateArm,
     Reward,
+
     Reset: () => {
-        window.Break = true;
+        Break = true;
         DockerReset();
         arm && arm.Reset();
     },
     Run: () => {
         const Options = {
             ACTIONS: arm.lengths.length,
-            STATES: State.length
+            STATES: state.length
         };
         Log('Options', Options);
-        Docker(Options).then(main);
+        Docker(Options, UI.Subdomain.value).then(main);
     },
-    setX: x => setX.then(setX => setX(Number(x)))
+
+    OBJLoader: Path => OBJLoader(Path, UI.ObjFaces.value).then(object => CannonObject(object)),
+
 });
+
+UI.then(UI => Object.entries(UI).forEach(([key, element]) => {
+    const ActionPerStep = _actionPerStep => actionPerStep = _actionPerStep;
+
+    element.addEventListener(element.type === 'input' ? 'input' : 'change', ({ target: { value } }) =>
+        ({ ActionPerStep, ArmSpeed, CannonSpeed, Cannonx, CannonObject })[key](value));
+}));
 
 
 window.addEventListener('DOMContentLoaded', () => {
-    Render(storage.Get() || [.5, .5]);
+    Render( //storage.Get() ||
+        [1, 1, 1]);
+
+    typeof CannonObject !== 'undefined' &&
+        CannonObject().then(_cannon => cannon = _cannon);
 
     UpdateArm()
         .then(DockerHandler)
