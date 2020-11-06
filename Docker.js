@@ -1,5 +1,5 @@
 const { io } = window;
-import { Log } from './2d-utils.js';
+import { Log } from './utils.js';
 
 const MyURL = Subdomain => window.location.hostname.replace(/.+?\./, Subdomain + '.');
 const Subdomain = document.querySelector('#Subdomain')

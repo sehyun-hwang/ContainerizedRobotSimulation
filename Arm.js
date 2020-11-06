@@ -1,5 +1,5 @@
 import { THREE, scene } from './three.js';
-import { Log } from './2d-utils.js';
+import { Log } from './utils.js';
 
 
 const DEG2RAD = deg => deg / 180 * Math.PI;
@@ -21,7 +21,7 @@ export class Arm {
     constructor(lengths, rotations) {
         const obj = { lengths, rotations };
         Log(obj);
-        Object.assign(this, obj)
+        Object.assign(this, obj);
         this.Reset();
 
         const geometry = new THREE.Geometry();

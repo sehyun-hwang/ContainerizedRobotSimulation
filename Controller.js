@@ -1,5 +1,5 @@
-import { Log } from './2d-utils.js';
-import { Angles } from './2d.js';
+import { Log } from './utils.js';
+import { Angles } from './index.js';
 
 const element = document.querySelector('#Controls');
 const Title = element.querySelector('h1');

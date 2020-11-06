@@ -44,7 +44,6 @@ class AngleInput extends HTMLElement {
     }
 }
 
-
 customElements.define('angle-input', AngleInput);
 
 

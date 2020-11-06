@@ -1,4 +1,4 @@
-import { Log, Storage, RandomColor } from './2d-utils.js';
+import { Log, Storage, RandomColor } from './utils.js';
 import { THREE, scene } from './three.js';
 
 const storage = new Storage('DistanceSensors');

@@ -1,10 +1,10 @@
-import { Log, Storage } from './2d-utils.js';
-import { Arm, Target, ArmSpeed } from './2d-env.js';
-import Docker, { Handler as DockerHandler, Reset as DockerReset } from './2d-Docker.js';
+import { Log, Storage } from './utils.js';
+import { Arm, Target, ArmSpeed } from './Arm.js';
+import Docker, { Handler as DockerHandler, Reset as DockerReset } from './Docker.js';
 //import DistanceSensor from './DistanceSensor.js';
 import { Meters } from './Controller.js';
 import { init as Wasm_init, Random } from './wasm.js';
-import UI from './RangeInput.js';
+import UI from './UI.js';
 //import { CannonSpeed, Changed, Cannonx, CannonObject } from './cannon.js';
 
 //import Emotiv from './Emotiv/export.js'
@@ -228,7 +228,7 @@ async function main(socket) {
 
 
 
-Object.assign(window, {
+UI.then(UI => Object.assign(window, {
     UpdateArm,
     Reward,
 
@@ -248,15 +248,35 @@ Object.assign(window, {
 
     OBJLoader: Path => OBJLoader(Path, UI.ObjFaces.value).then(object => CannonObject(object)),
 
-});
-
-UI.then(UI => Object.entries(UI).forEach(([key, element]) => {
-    const ActionPerStep = _actionPerStep => actionPerStep = _actionPerStep;
-
-    element.addEventListener(element.type === 'input' ? 'input' : 'change', ({ target: { value } }) =>
-        ({ ActionPerStep, ArmSpeed, CannonSpeed, Cannonx, CannonObject })[key](value));
 }));
 
+UI.then(UI => {
+
+    const ActionPerStep = _actionPerStep => actionPerStep = _actionPerStep;
+
+    Promise.allSettled([
+            () => ({ ActionPerStep }),
+            () => ({ ArmSpeed }),
+            () => ({ CannonSpeed }),
+            () => ({ Cannonx }),
+            () => ({ CannonObject }),
+        ].map(x => Promise.resolve().then(x).catch()))
+
+        .then(x => x.map(({ value }) => value && Object.entries(value))
+            .filter(x => x))
+        .then(console.log)
+        .then(Object.fromEntries)
+        //.then(console.log)
+        .then(x => Object.entries(UI).forEach(([key, element]) =>
+            element.addEventListener(
+                element.type === 'input' ? 'input' : 'change',
+                ({ target: { value } }) => {
+                    console.log(x)
+                    //[1](value)
+
+                })
+        ));
+});
 
 window.addEventListener('DOMContentLoaded', () => {
     Render( //storage.Get() ||
