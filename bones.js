@@ -19,9 +19,9 @@ import {
 	Uint16BufferAttribute,
 	WebGLRenderer
 }
-from "/volatile/three.js/build/three.module.js";
-import { GUI } from '/volatile/three.js//examples/jsm/libs/dat.gui.module.js';
-import { OrbitControls } from '/volatile/three.js/examples/jsm/controls/OrbitControls.js';
+from "https://www.hwangsehyun.com/volatile/three.js/build/three.module.js";
+import { GUI } from 'https://www.hwangsehyun.com/volatile/three.js//examples/jsm/libs/dat.gui.module.js';
+import { OrbitControls } from 'https://www.hwangsehyun.com/volatile/three.js/examples/jsm/controls/OrbitControls.js';
 let gui, scene, camera, renderer, orbit, lights, mesh, bones, skeletonHelper;
 const state = {
 	animateBones: false

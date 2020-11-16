@@ -80,11 +80,16 @@ export class Arm {
             const geometry = new THREE.CylinderBufferGeometry(
                 .1, // radiusTop
                 .2, // radiusBottom
-                height, // height
+                sizing.halfHeight, // height
                 8, // radiusSegments
                 lengths.length, // heightSegments
                 true // isEndClosed
             );
+            
+            const bones = this.Map(() => new THREE.Bone(), 1);
+            const [bone] = bones;
+            bone.position.set(0,0,0)
+            
             const position = geometry.attributes.position;
             const vertex = new Vector3();
 
@@ -92,6 +97,8 @@ export class Arm {
             const skinWeights = [];
 
             console.groupCollapsed();
+            
+        
             for (let i = 0; i < position.count; i++) {
                 vertex.fromBufferAttribute(position, i);
                 const y = vertex.y + sizing.halfHeight;
@@ -108,16 +115,6 @@ export class Arm {
             geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
             geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
 
-
-
-            const bones = this.Map(() => new THREE.Bone(), 1);
-            const [bone] = bones;
-
-
-
-
-
-
             const material = new THREE.MeshPhongMaterial({
                 side: THREE.DoubleSide,
                 skinning: true,
@@ -125,13 +122,15 @@ export class Arm {
             });
             const mesh = new THREE.SkinnedMesh(geometry, material);
 
-            bone.position.set(0, -sizing.halfHeight, 0)
             mesh.add(bone);
+            bones.forEach(({position},i)=>position.set(0, sizing.segmentHeight,0))
             bones.Between().forEach(([x, y]) => x.add(y));
 
-
             //bones.forEach(x => x.rotateZ(-Math.PI / 2))
-            bone.position.set(1, 0, 0)
+            //mesh.position.set(sizing.halfHeight, 0, 0)
+            //bone.position.set(0, sizing.halfHeight, 0)
+            
+            //bone.rotateZ(-Math.PI / 2)
             mesh.rotateZ(-Math.PI / 2)
             const skeleton = new THREE.Skeleton(bones);
 
@@ -163,8 +162,7 @@ export class Arm {
             //mesh.rotateX(Math.PI / 2)
             //mesh.scale.fromArray(Array(3).fill(2 / 3))
 
-            //mesh.translateY(.5)
-            console.log(mesh.position)
+            mesh.translateY(-1)
 
 
             Object.assign(this, { mesh, bones: skeleton.bones })
@@ -197,20 +195,20 @@ export class Arm {
         geometry.setFromPoints(Nodes);
         geometry.verticesNeedUpdate = true;
 
-        const Euler = new THREE.Euler();
-
-        console.group()
-        //bones[1].position.set(0, 1, 0)
-        //bones[2].position.set(0, 1, 0)
-        //bones[3].position.set(1, 0, 0)
-        //console.log(bones, BeforeTranslation)
-
-        BeforeTranslation.forEach((x, i) => {
-
-            bones[i + 1].position.copy(x) //.add(translate);
-            //i && rotation.copy(Euler.setFromVector3(BeforeTranslation[i - 1]));
+const Quaternion = new THREE.Quaternion();
+ 
+        console.group();
+        [
+            this.X,
+        ...BeforeTranslation,
+        ].Between().forEach((x, i) => {
+const {rotation} =  bones[i];
+Quaternion.setFromUnitVectors(...x);
+rotation.set(0,0,0)
+            //bones[i + 1].position.copy(x.clone().applyAxisAngle(this.Z, Math.PI/2)) //.add(translate);
+           rotation.setFromQuaternion(Quaternion);
         });
-        console.log(bones)
+        console.log(bones);
         console.groupEnd()
 
         return this.Emit(this.Render, this.Nodes);
@@ -249,7 +247,7 @@ export class Arm {
         });
 
         const con = //Array(10).fill(90)
-            [0, 0, 0, 0]
+            [0, 90, 0, 0]
             .map(DEG2RAD);
 
         const Vector = Z.clone();

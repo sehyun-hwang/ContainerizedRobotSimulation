@@ -264,7 +264,7 @@ UI.then(UI => Object.assign(window, {
 
 window.addEventListener('DOMContentLoaded', () => {
     Render( //storage.Get() ||
-        [1, 1]);
+        [1, 1,1]);
 
     typeof CannonObject !== 'undefined' &&
         CannonObject().then(_cannon => cannon = _cannon);
