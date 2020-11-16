@@ -1,10 +1,24 @@
 import 'https://www.hwangsehyun.com/utils/Accordion.js';
-import { OnResize } from './three.js';
+import 'https://www.hwangsehyun.com/utils/Toggle.js';
+import Mode from './UIMode.js';
 
 let UI;
-export default new Promise(resolve => UI = resolve);
+const promise = new Promise(resolve => UI = resolve);
+export default promise;
 
-const Checkboxes = [];
+export const Handlers = handlers => Promise.allSettled(handlers.map(x => Promise.resolve().then(x).catch()))
+
+    .then(x => x.map(({ value }) => value && Object.entries(value)[0])
+        .filter(x => x))
+    .then(x => Object.fromEntries(x))
+
+    .then(async obj => Object.entries(await promise).forEach(([key, element]) =>
+        element.addEventListener(
+            element.type === 'input' ? 'input' : 'change',
+            ({ target: { value } }) => obj[key](value))
+    ));
+
+export const Checkboxes = [];
 
 window.addEventListener('DOMContentLoaded', () => UI(Array.prototype.map.call(document.querySelectorAll('accordion-shadow'), ({ shadowRoot }) => {
         const Ranges = shadowRoot.querySelectorAll('input[type="range"]');
@@ -34,50 +48,19 @@ window.addEventListener('DOMContentLoaded', () => UI(Array.prototype.map.call(do
         return accum;
     }, {})));
 
+window.addEventListener('DOMContentLoaded', function () {
+    const UIMode = Mode.bind(undefined, Checkboxes);
+    UIMode();
+    Object.assign(window, { UIMode });
+});
 
 
-class AngleInput extends HTMLElement {
+customElements.define('angle-input', class extends HTMLElement {
+    AngleInput = window.AngleInput
+
     constructor() {
         super();
         this.classList.add('default-input', 'block');
-        window.AngleInput(this);
+        this.AngleInput(this);
     }
-}
-
-customElements.define('angle-input', AngleInput);
-
-
-{
-
-    const element = document.querySelector('#UIMode');
-    const LastButtonStyle = document.querySelector('#UIModeButtons button:last-child').style;
-    const Classes = 'absolute w-full h-full'.split(' ');
-
-    const Functions = [
-        () => document.body.firstElementChild.style.maxHeight = 0,
-        () => {
-            document.body.firstElementChild.style.maxHeight = 'unset';
-            element.classList.add(...Classes);
-        },
-        () => {
-            element.classList.remove(...Classes);
-        }
-    ];
-
-
-    let mode = 1;
-
-    function UIMode(delta = 0) {
-        mode += delta;
-        LastButtonStyle.display = mode === 2 ? 'none' : 'unset';
-        mode === 2 && Checkboxes.forEach(x => x.checked = true);
-
-        console.log({ mode });
-        Functions[mode]();
-        OnResize();
-    }
-
-    UIMode();
-    Object.assign(window, { UIMode });
-
-}
+});

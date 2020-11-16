@@ -4,7 +4,7 @@ import Docker, { Handler as DockerHandler, Reset as DockerReset } from './Docker
 //import DistanceSensor from './DistanceSensor.js';
 import { Meters } from './Controller.js';
 import { init as Wasm_init, Random } from './wasm.js';
-import UI from './UI.js';
+import UI, { Handlers as UIHandlers } from './UI.js';
 //import { CannonSpeed, Changed, Cannonx, CannonObject } from './cannon.js';
 
 //import Emotiv from './Emotiv/export.js'
@@ -250,37 +250,21 @@ UI.then(UI => Object.assign(window, {
 
 }));
 
-UI.then(UI => {
-
+{
     const ActionPerStep = _actionPerStep => actionPerStep = _actionPerStep;
 
-    Promise.allSettled([
-            () => ({ ActionPerStep }),
-            () => ({ ArmSpeed }),
-            () => ({ CannonSpeed }),
-            () => ({ Cannonx }),
-            () => ({ CannonObject }),
-        ].map(x => Promise.resolve().then(x).catch()))
-
-        .then(x => x.map(({ value }) => value && Object.entries(value))
-            .filter(x => x))
-        .then(console.log)
-        .then(Object.fromEntries)
-        //.then(console.log)
-        .then(x => Object.entries(UI).forEach(([key, element]) =>
-            element.addEventListener(
-                element.type === 'input' ? 'input' : 'change',
-                ({ target: { value } }) => {
-                    console.log(x)
-                    //[1](value)
-
-                })
-        ));
-});
+    UIHandlers([
+        () => ({ ActionPerStep }),
+        () => ({ ArmSpeed }),
+        () => ({ CannonSpeed }),
+        () => ({ Cannonx }),
+        () => ({ CannonObject }),
+    ])
+};
 
 window.addEventListener('DOMContentLoaded', () => {
     Render( //storage.Get() ||
-        [1, 1, 1]);
+        [1, 1]);
 
     typeof CannonObject !== 'undefined' &&
         CannonObject().then(_cannon => cannon = _cannon);

@@ -1,9 +1,9 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.0/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three/build/three.module.js';
 export { THREE };
 export const Z = new THREE.Vector3(0, 0, 1);
 
-import Stats from 'https://cdn.jsdelivr.net/npm/three@v0.117.0/examples/jsm/libs/stats.module.min.js';
-import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@v0.117.0/examples/jsm/controls/OrbitControls.js";
+import Stats from 'https://cdn.jsdelivr.net/npm/three/examples/jsm/libs/stats.module.min.js';
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three/examples/jsm/controls/OrbitControls.js";
 
 import Load from './three-loader.js';
 export { Load };
@@ -23,7 +23,13 @@ export const stats = new Stats();
 
 element.appendChild(renderer.domElement);
 camera.position.set(0, 0, 10);
-scene.add(new THREE.AmbientLight()); {
+//scene.add(new THREE.AmbientLight());
+scene.add(new THREE.HemisphereLight(undefined, .1));
+const light = new THREE.PointLight();
+light.position.set(0, 0, 1);
+scene.add(light);
+
+{
     renderer.setClearColor(0x0F0F0F);
     renderer.setPixelRatio(window.devicePixelRatio);
 } {

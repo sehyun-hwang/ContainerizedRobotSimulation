@@ -35,18 +35,14 @@ function LineWithBuffer(type, args = []) {
         throw new Error('Unsupported type: ' + type);
 
     console.log(NonBuffer, Buffer);
-    const geometry_scene = new THREE.LineSegments(
-        new THREE.WireframeGeometry(Buffer),
-        new THREE.LineBasicMaterial({
-            color: new THREE.Color(...Array.from({ length: 3 }, () => Math.random() / 2 + .5)),
-        }));
     const geometry_nonbuffer = new THREE.Mesh(
         NonBuffer,
         new THREE.MeshBasicMaterial({
-            visible: false,
+            wireframe: true,
+            color: new THREE.Color(...Array.from({ length: 3 }, () => Math.random() / 2 + .5))
         }));
     const object = new THREE.Object3D();
-    object.add(geometry_scene);
+    //object.add(geometry_scene);
     object.add(geometry_nonbuffer);
     scene.add(object);
 

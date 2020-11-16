@@ -5,6 +5,7 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/1.6.2/tailwind.min.css" integrity="sha512-mZ+ZnjWE+WxIG8b8Ilysrfq7stpTrGu53lofHJbhuIe6iYmURmoXlZ4ycMN7qQoMhR3qWzVXF/q4N4UKfwmZeQ==" crossorigin="anonymous" />
 <link rel="stylesheet" href="https://cloudfront.hwangsehyun.com/utils/Accordion.css" />
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/angle-input@0.0.1/angle-input.css" />
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
@@ -34,5 +35,16 @@
 
     ::-webkit-scrollbar-thumb {
         background: grey;
+    }
+
+    .toggle-dot {
+        top: -.25rem;
+        left: -.25rem;
+        transition: all 0.3s ease-in-out;
+    }
+
+    input:checked~.toggle-dot {
+        transform: translateX(100%);
+        background-color: #48bb78;
     }
 </style>
