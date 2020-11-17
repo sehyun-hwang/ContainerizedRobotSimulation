@@ -80,11 +80,16 @@ export class Arm {
             const geometry = new THREE.CylinderBufferGeometry(
                 .1, // radiusTop
                 .2, // radiusBottom
-                height, // height
+                sizing.height, // height
                 8, // radiusSegments
                 lengths.length, // heightSegments
                 true // isEndClosed
             );
+            
+            const bones = this.Map(() => new THREE.Bone(), 1);
+            const [bone] = bones;
+            bone.position.set(0,0,0)
+            
             const position = geometry.attributes.position;
             const vertex = new Vector3();
 
@@ -92,6 +97,8 @@ export class Arm {
             const skinWeights = [];
 
             console.groupCollapsed();
+            
+        
             for (let i = 0; i < position.count; i++) {
                 vertex.fromBufferAttribute(position, i);
                 const y = vertex.y + sizing.halfHeight;
@@ -108,11 +115,14 @@ export class Arm {
             geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
             geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
 
+<<<<<<< HEAD
 
 
             const bones = this.Map(() => new THREE.Bone(), 1);
             const [bone] = bones;
 
+=======
+>>>>>>> d2b1000dcd991f9055f393db1c1e4a97d6f24f24
             const material = new THREE.MeshPhongMaterial({
                 side: THREE.DoubleSide,
                 skinning: true,
@@ -120,46 +130,22 @@ export class Arm {
             });
             const mesh = new THREE.SkinnedMesh(geometry, material);
 
-            bone.position.set(0, -sizing.halfHeight, 0)
             mesh.add(bone);
+            bone.position.set(0,-1.5,0)
+            bones.slice(1).forEach(({position},i)=>position.set(0, i*sizing.segmentHeight, 0))
             bones.Between().forEach(([x, y]) => x.add(y));
 
+<<<<<<< HEAD
 
             //bones.forEach(x => x.rotateZ(-Math.PI / 2))
             //bone.position.set(1, 0, 0)
+=======
+>>>>>>> d2b1000dcd991f9055f393db1c1e4a97d6f24f24
             mesh.rotateZ(-Math.PI / 2)
             const skeleton = new THREE.Skeleton(bones);
 
-            {
-                //mesh.position.y = sizing.halfHeight;
-
-                //bone.rotateZ(-Math.PI / 2)
-                //                bone.position.x = -1;
-
-
-
-                mesh.bind(skeleton,
-                    new THREE.Matrix4()
-                    //.makeRotationZ(-Math.PI / 2)
-                    //     .setPosition( //-height,
-                    //         //sizing.height,
-                    //         0,
-                    //         0,
-                    //         0,
-                    //     )
-                );
-
-            }
-
-            //mesh.up.set(1, 0, 0)
-            //mesh.rotateZ(-Math.PI / 2)
-            //mesh.rotateY(Math.PI / 2)
-
-            //mesh.rotateX(Math.PI / 2)
-            //mesh.scale.fromArray(Array(3).fill(2 / 3))
-
-            //mesh.translateY(.5)
-            console.log(mesh.position)
+            mesh.bind(skeleton);
+            mesh.translateY(1.5)
 
 
             Object.assign(this, { mesh, bones: skeleton.bones })
@@ -188,10 +174,11 @@ export class Arm {
     Z = new Vector3(0, 0, 1);
 
     Render() {
-        const { geometry, mesh, Nodes, bones, BeforeTranslation, sizing: { height } } = this;
+        const { geometry, Nodes, bones, BeforeTranslation, sizing: { height } } = this;
         geometry.setFromPoints(Nodes);
         geometry.verticesNeedUpdate = true;
 
+<<<<<<< HEAD
         const Euler = new THREE.Euler();
 
         console.group()
@@ -204,8 +191,25 @@ export class Arm {
 
             bones[i].position.copy(x) //.add(translate);
             //i && rotation.copy(Euler.setFromVector3(BeforeTranslation[i - 1]));
+=======
+const Quaternion = new THREE.Quaternion();
+ 
+        console.group();
+        [
+            this.X,
+        ...BeforeTranslation,
+        ].Between().forEach(([x,y], i) => {
+            const {rotation} =  bones[i+1];
+            Quaternion.setFromUnitVectors(x,y);
+            //rotation.set(0,0,0)
+           rotation.setFromQuaternion(Quaternion);
+>>>>>>> d2b1000dcd991f9055f393db1c1e4a97d6f24f24
         });
-        console.log(bones)
+        console.log(bones);
+        {
+            
+        }
+        //Nodes.slice(-1).forEach((x,i)=>bones[i+1].position.copy(x))
         console.groupEnd()
 
         return this.Emit(this.Render, this.Nodes);
@@ -267,7 +271,7 @@ export class Arm {
         });
 
         Nodes[0].multiplyScalar(0);
-        Nodes.Between().forEach(([x, y], i) => y.copy(BeforeTranslation[i].clone().add(x)));
+        Nodes.Between().forEach(([x, y], i) => y.copy(BeforeTranslation[i]).add(x));
 
         Arrows.forEach(({ position }, i) => position.copy(Nodes[i]));
         this.Arrows.forEach(x => scene.remove(x));
