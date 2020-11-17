@@ -113,11 +113,6 @@ export class Arm {
             const bones = this.Map(() => new THREE.Bone(), 1);
             const [bone] = bones;
 
-
-
-
-
-
             const material = new THREE.MeshPhongMaterial({
                 side: THREE.DoubleSide,
                 skinning: true,
@@ -131,7 +126,7 @@ export class Arm {
 
 
             //bones.forEach(x => x.rotateZ(-Math.PI / 2))
-            bone.position.set(1, 0, 0)
+            //bone.position.set(1, 0, 0)
             mesh.rotateZ(-Math.PI / 2)
             const skeleton = new THREE.Skeleton(bones);
 
@@ -207,7 +202,7 @@ export class Arm {
 
         BeforeTranslation.forEach((x, i) => {
 
-            bones[i + 1].position.copy(x) //.add(translate);
+            bones[i].position.copy(x) //.add(translate);
             //i && rotation.copy(Euler.setFromVector3(BeforeTranslation[i - 1]));
         });
         console.log(bones)

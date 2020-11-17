@@ -5,7 +5,7 @@ import Docker, { Handler as DockerHandler, Reset as DockerReset } from './Docker
 import { Meters } from './Controller.js';
 import { init as Wasm_init, Random } from './wasm.js';
 import UI, { Handlers as UIHandlers } from './UI.js';
-//import { CannonSpeed, Changed, Cannonx, CannonObject } from './cannon.js';
+import { CannonSpeed, Changed, Cannonx, CannonObject } from './cannon.js';
 
 //import Emotiv from './Emotiv/export.js'
 //Emotiv(Angles => renderer.domElement.addEventListener('Render', () => arm.Angles(Angles), { once: true }))
