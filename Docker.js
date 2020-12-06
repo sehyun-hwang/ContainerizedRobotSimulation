@@ -69,7 +69,7 @@ export const Handler = (data = new URLSearchParams(window.location.search).get('
 
 export default (body, Subdomain) => Promise.resolve(body)
     .then(JSON.stringify)
-    .then(body => fetch(`https://${MyURL('proxy')}/robot/docker?` + new URLSearchParams({ Subdomain }), {
+    .then(body => fetch(`https://${MyURL('proxy')}/robot/ddpg?` + new URLSearchParams({ Subdomain }), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

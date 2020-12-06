@@ -1,21 +1,45 @@
+import express from 'express';
+import { PathParser } from "utils";
+import Run, { Docker } from "utils/Docker";
+
 import router from "./Router.js";
-export { router };
 
-import got from 'got';
-import { MyURL, PathParser } from "utils";
 const { App } = PathParser(new Error());
-import { Run } from "utils/Docker";
 
-router.get('/docker', (req, res) => Run({
-        Labels: { APP: App },
-        Image: "pytorch/pytorch",
-        Env: [
-            'PIP_INDEX_URL=http://apt.network:3141/root/pypi/+simple/',
-            'PIP_TRUSTED_HOST=apt.network'
-        ]
-    }, Name => res.send(Name))
-    .then(data => console.log("data", data && data.toString()))
-    .catch(error => {
-        console.log(error);
-        res.status(500).send(error);
-    }));
+router.get('/ddpg', ({ query: { Subdomain } }, res) => Docker(Subdomain).listContainers({
+        all: true,
+        filters: { ancestor: ['param-server'] },
+    }).then(data => {
+        console.log(data);
+        res.json(data);
+    }))
+
+
+    .post('/ddpg', express.json(), express.raw({
+            type: 'text/plain'
+        }), ({ query: { Subdomain, name }, body }, res) =>
+
+        Promise.resolve(typeof body instanceof Buffer ? Buffer.from(JSON.stringify(body)) : body)
+        .then(buffer => Run({
+            name,
+            Labels: { APP: App },
+            Image: "param-server",
+            Env: 'PARAMS=' + buffer.toString('base64'),
+            Hostname: name,
+            HostConfig: {
+                Binds: ['$/param-server:/root'],
+                //AutoRemove: true,
+            },
+            Cmd: ['bash', 'Docker.sh', 'param-server']
+        }, Subdomain))
+
+        .then(emitter => emitter.once('Name', Name => res.send(Name)))
+
+        .catch(error => {
+            console.log(error);
+            res.status(500).json(error);
+        }));
+
+
+
+export { router };

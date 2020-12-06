@@ -8,6 +8,7 @@ const Paths = {
     CSG: './build/web_modules/three-csg.js',
     CANNON: 'https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js',
     OBJLoader: 'loaders/OBJLoader.js',
+    ArmBones: './ArmBones.js',
 };
 
 export default modules => Promise.all(modules.map(module => {
