@@ -11,9 +11,12 @@ from random import random, randrange
 from socketio import Client as IO, ClientNamespace as Namespace
 from socket import gethostname as Host
 
-#import JSON
-import numpy as np
+from base64 import b64decode
 import json
+import numpy as np
+
+PARAMS = json.loads(b64decode(environ.get("PARAMS", 'e30=')))
+print(PARAMS)
 
 
 def default(obj):
@@ -54,7 +57,9 @@ class CustomNamespace(Namespace):
         return np.array([x1, y1, x2, y2, x3, y3, xt, yt])
 """
 
-io = IO(json=JSON())
+io = IO(
+    json=JSON(),  #logger=True, engineio_logger=True
+)
 
 Emit = lambda *args: io.emit('Container', list(args), namespace=namespace)
 
@@ -103,8 +108,12 @@ def main():
     (':8080' if UID() else '') + f"?Container={host.replace('.network', '')}&KeepAlive=1"
     print('Host:', host)
 
-    io.connect(host, namespaces=[namespace])
+    io.connect(host + namespace,
+               transports=['websocket'],
+               namespaces=[namespace])
+
     #io.register_namespace(CustomNamespace(namespace))
+    io.namespaces[namespace] = None
 
     io.emit('Room', 'robot', namespace=namespace)
 
@@ -113,10 +122,8 @@ def main():
 
 
 if __name__ == '__main__':
-    actions, states = map(lambda x: int(environ[x]),
-                          'ACTIONS STATES'.split(' '))
-    print('actions', actions, 'states', states)
-    model = DDPG(actions, states, 1)
+
+    model = DDPG(PARAMS['Actions'], PARAMS['States'], 1)
     On(model, "model")
     On(Learn)
     main()

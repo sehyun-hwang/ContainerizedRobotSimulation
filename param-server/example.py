@@ -3,6 +3,7 @@ from os import environ
 from base64 import b64decode
 import requests
 from multiprocessing import cpu_count
+from time import sleep
 import asyncio
 
 import tensorflow.keras.layers.experimental.preprocessing as kpl
@@ -13,10 +14,12 @@ import random
 host = Host()
 print('Host', host)
 
-API = 'https://proxy.hwangsehyun.com/robot/ddpg'
+API = 'https://proxy.hwangsehyun.com/robot/paramserver'
 NETWORK = '.network'
 PORT = 8500
 WORKERS = 1
+
+environ["GRPC_FAIL_FAST"] = "use_caller"
 
 
 def create_in_process_cluster(num_workers):
@@ -33,19 +36,30 @@ def create_in_process_cluster(num_workers):
         print('ps')
 
     workers = [f'{ps}-{i}' for i in range(WORKERS)]
-    if not IsWorker:
-        for name in workers:
-            requests.post(API, params={"name": name}, data=environ['PARAMS'])
-
-    cluster_dict["ps"] = [f'{ps}{NETWORK}:{PORT}']
     cluster_dict["worker"] = [f'{x}{NETWORK}:{PORT}' for x in workers]
+    cluster_dict["ps"] = [f'{ps}{NETWORK}:{PORT}']
+
+    if IsWorker:
+        #cluster_dict["worker"][i] = f'localhost:{PORT}'
+        pass
+    else:
+        #cluster_dict["ps"][0] = f'localhost:{PORT}'
+        print([
+            requests.put(API,
+                         params={
+                             "name": name,
+                         },
+                         headers={
+                             "Accept": "text/plain"
+                         }).text for name in workers
+        ])
+
     print(cluster_dict)
-
     cluster_spec = tf.train.ClusterSpec(cluster_dict)
-
     worker_config = tf.compat.v1.ConfigProto()
-    if cpu_count() < num_workers + 1:
-        worker_config.inter_op_parallelism_threads = num_workers + 1
+
+    #if cpu_count() < num_workers + 1:
+    #    worker_config.inter_op_parallelism_threads = num_workers + 1
 
     if IsWorker:
         tf.distribute.Server(cluster_spec,
@@ -61,10 +75,9 @@ def create_in_process_cluster(num_workers):
 
     cluster_resolver = tf.distribute.cluster_resolver.SimpleClusterResolver(
         cluster_spec, rpc_layer="grpc")
+
     return cluster_resolver
 
-
-environ["GRPC_FAIL_FAST"] = "use_caller"
 
 cluster_resolver = create_in_process_cluster(WORKERS)
 
@@ -141,9 +154,6 @@ with strategy.scope():
 
     optimizer = keras.optimizers.RMSprop(learning_rate=0.1)
     accuracy = keras.metrics.Accuracy()
-"""### Define the training step
-Third, create the training step wrapped into a `tf.function`:
-"""
 
 
 @tf.function
@@ -186,6 +196,8 @@ for i in range(num_epoches):
     accuracy.reset_states()
     for _ in range(steps_per_epoch):
         coordinator.schedule(step_fn, args=(per_worker_iterator, ))
+        #while not coordinator.done(): sleep(1)
+
     coordinator.join()
     print("Finished epoch %d, accuracy is %f." %
           (i, accuracy.result().numpy()))

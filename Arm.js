@@ -1,15 +1,9 @@
-import { THREE, Vector3, scene, Load } from './three.js';
+import { THREE, Vector3, scene } from './three.js';
 import { Log } from './utils.js';
 import { constructor, Render } from './ArmBones.js';
 
-let ArmBones;
-
-export const ImproveVisual = bool => {
-    if (bool)
-        Load('ArmBones').then(module => ArmBones = module);
-    else
-        ArmBones = false;
-}
+let ImproveVisual = false;
+export const ToggleVisual = bool => ImproveVisual = bool;
 
 const DEG2RAD = deg => deg / 180 * Math.PI;
 const RAD2DEG = rad => rad * 180 / Math.PI;
@@ -17,10 +11,8 @@ const RAD2DEG = rad => rad * 180 / Math.PI;
 let speed = DEG2RAD(1);
 export const ArmSpeed = _speed => speed = DEG2RAD(_speed);
 
-const Random = () => Math.random() * 2 - 1;
-
 export const Target = new THREE.Mesh(
-    new THREE.CircleBufferGeometry(0.1, 32),
+    new THREE.SphereBufferGeometry(0.1),
     new THREE.MeshBasicMaterial({ color: 0xffff00 })
 );
 scene.add(Target);
@@ -62,25 +54,33 @@ export class Arm {
         Object.assign(this, {
             geometry,
             line,
+            rotations,
             Emitter: document.createElement('div'),
             Arrows: [],
         });
 
         try {
+            ImproveVisual && constructor(this);
             this.Angles();
-            constructor(this);
         }
         catch (error) {
             console.warn(error);
         }
+    }
 
+    get LastNode() {
+        const { Nodes } = this;
+        return Nodes[Nodes.length - 1];
     }
 
     On(...args) {
         this.Emitter.addEventListener(...args);
     }
-    Emit({ name }, detail) {
-        this.Emitter.dispatchEvent(new CustomEvent(name, { detail }));
+    Emit(obj, detail) {
+        if (typeof obj === 'object' && !('name' in obj))
+            throw new Error('Object need a name');
+
+        this.Emitter.dispatchEvent(new CustomEvent(typeof obj === 'string' ? obj : obj.name, { detail }));
         return new Promise(resolve => setTimeout(resolve, 0));
     }
 
@@ -94,7 +94,7 @@ export class Arm {
         geometry.verticesNeedUpdate = true;
 
         try {
-            Render(this);
+            ImproveVisual && Render(this);
         }
         catch (error) {
             console.warn(error);
@@ -103,17 +103,21 @@ export class Arm {
     }
 
     Reset() {
-        const r = Math.random(),
-            theta = Math.random() * 2 * Math.PI;
-        const target = [r * Math.cos(theta), r * Math.sin(theta)];
-        Target.position.fromArray(target);
-        Target.verticesNeedUpdate = true;
-
         const state = Array(this.lengths.length).fill(0);
-        const Nodes = this.lengths.reduce((accum, cur) => {
+        let Nodes = this.lengths.reduce((accum, cur) => {
             accum.push(cur + accum[accum.length - 1]);
             return accum;
-        }, [0]).map(x => new Vector3(x));
+        }, [0]);
+
+
+        const r = Nodes[Nodes.length - 1] * Math.random(),
+            theta = Math.random() * 2 * Math.PI;
+        const target = [r * Math.cos(theta), r * Math.sin(theta)];
+        Target.position.set(...target, 0);
+        Target.verticesNeedUpdate = true;
+        Log('Target', target);
+
+        Nodes = Nodes.map(x => new Vector3(x));
 
         Object.assign(this, { target, state, Nodes });
 
@@ -121,7 +125,7 @@ export class Arm {
     }
 
     Angles(angles = Array(this.lengths.length).fill(0)) {
-        const { lengths, Nodes, X, Z } = this;
+        const { lengths, Nodes, X, Z, rotations } = this;
 
         if (angles.length < lengths.length)
             throw new Error(`length of angles should be >= ${this.lengths.length}. Got ${angles.length}`);
@@ -134,10 +138,6 @@ export class Arm {
             return angle > PI2 ? angle - PI2 : angle;
         });
 
-        const con = //Array(10).fill(90)
-            [0, 90, 0, 0]
-            .map(DEG2RAD);
-
         const Vector = Z.clone();
         const Quaternion = new THREE.Quaternion();
         const Quaternion2 = new THREE.Quaternion();
@@ -145,7 +145,7 @@ export class Arm {
         let Node = X;
 
         const BeforeTranslation = lengths.map((x, i) => {
-            Quaternion.setFromAxisAngle(Node.clone().normalize(), con[i]);
+            rotations && Quaternion.setFromAxisAngle(Node.clone().normalize(), rotations[i]);
             Vector.applyQuaternion(Quaternion);
             Quaternion2.setFromAxisAngle(Vector, state[i]);
 
@@ -168,8 +168,14 @@ export class Arm {
         return this.Render();
     }
 
+    VectorToTarget() {
+        return this.Nodes[this.Nodes.length - 1].clone().sub(Target.position);
+    }
+
     Dispose() {
+        this.Arrows.forEach(x => scene.remove(x));
         scene.remove(this.line);
+        scene.remove(this.Mesh3D);
         this.Emitter.remove();
     }
 }

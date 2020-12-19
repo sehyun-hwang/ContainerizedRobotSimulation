@@ -2,7 +2,7 @@ import { THREE, Z, scene, camera, renderer, orbit, Load } from './three.js';
 //import Geometries from './Geometries.js';
 //import Shape2Mesh from './canon-shape2mesh.js';
 
-let speed = 1;
+let speed = .3;
 export const CannonSpeed = _speed => speed = _speed;
 
 const CopyVector = (src, dsc) => dsc.set(...src.toArray());
@@ -62,7 +62,7 @@ const init = Load(['CSG', 'TransformControls', 'CANNON'])
         const [CSG, { TransformControls }, _CANNON] = Modules;
         CANNON = _CANNON;
 
-        const [geometry, object] = LineWithBuffer('TetrahedronGeometry', [.5]);
+        const [geometry, object] = LineWithBuffer('DodecahedronGeometry', [.3]);
         const transformControls = new TransformControls(camera, renderer.domElement);
         orbit.WithTransformControls(transformControls);
         transformControls.attach(object);
@@ -73,11 +73,12 @@ const init = Load(['CSG', 'TransformControls', 'CANNON'])
     });
 
 const DefaultGeometryArgs = {
-    TorusKnotGeometry: [3, 1, 40, 10],
+    TorusGeometry: [2, 1, 8, 3],
     BoxGeometry: [3, .5, 3],
-}
+    TorusKnotGeometry: [3, 1, 40, 10],
+};
 
-export const CannonObject = (Custom = 'BoxGeometry') => init.then(({
+export const CannonObject = (Custom = 'TorusGeometry') => init.then(({
         CSG,
         geometry,
         object,
@@ -160,26 +161,47 @@ export const CannonObject = (Custom = 'BoxGeometry') => init.then(({
         {
             const element = renderer.domElement;
             const event = 'Render';
-            let Finished;
+            let Finished, i = 0;
 
             const Step = (delta = 0) => {
                 console.log('Step');
-                world.step(delta);
-                CopyObject(body, object2);
 
                 OnChange().then(magnitude => {
                     constraint.setMotorSpeed(-magnitude * speed);
                     console.log({ magnitude });
+
                     body.angularVelocity.almostZero() ? Finished() : AttachStep();
                     console.timeEnd(timer);
                 });
+
+                world.step(delta);
+                CopyObject(body, object2);
             };
 
             const Handler = ({ detail }) => Step(detail);
             AttachStep = () => {
+                console.log(i);
+                if (i++ > 10) {
+                    Finished();
+                    return Promise.resolve();
+                }
+
                 element.removeEventListener(event, Handler);
                 element.addEventListener(event, Handler, { once: true });
-                return new Promise(resolve => Finished = resolve);
+
+                if (Finished)
+                    return Promise.resolve();
+
+                let resolve;
+                const promise = new Promise(_resolve => resolve = _resolve);
+                Finished = function () {
+                    console.log('Finished');
+                    i = 0;
+                    Finished = undefined;
+                    resolve();
+                };
+
+                return promise;
             };
 
             setX = x => {
@@ -193,5 +215,11 @@ export const CannonObject = (Custom = 'BoxGeometry') => init.then(({
             setX(5).then(Step);
         }
 
+        Object.defineProperty(object, "CannonRotation", {
+            get: function () {
+                const z = object2.rotation._z;
+                return [z, z - Math.PI];
+            }
+        });
         return object;
     });

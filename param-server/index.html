@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <!--#include file="/robot/head.html" -->
+
+        <style></style>
+        <script src="index.js"></script>
+    </head>
+
+    <body class="flex flex-col h-screen">
+        <div class="m-2">
+            <button onclick="OnClick()" class="mx-4 my-2 px-4 py-2 rounded text-white bg-blue-500 hover:bg-blue-400">Run</button>
+            <form class="inline">
+                <label>RL Id</label>
+                <input name="id" class="appearance-none m-4 p-2 border rounded shadow focus:shadow-outline" value="59" />
+                <label>Workers</label>
+                <input name="Workers" type="number" value="1" class="appearance-none m-4 p-2 border rounded shadow focus:shadow-outline" />
+            </form>
+            <label>File to run</label>
+            <select id="file" class="appearance-none m-4 px-4 py-2 bg-white border border-gray-400 hover:border-gray-500 rounded shadow"></select>
+        </div>
+
+        <div id="Consoles" class="flex flex-grow whitespace-pre-wrap break-all bg-black text-white font-mono overflow-hidden">
+            <div class="flex-grow overflow-y-auto border-r"></div>
+            <div class="flex-shrink-0 overflow-y-auto">
+                <div class="mt-8 mx-16">
+                    <div class="animate-spin w-16 h-16 mx-auto rounded-full border-4 border-t-4 border-gray-200" style="border-top-color: #3498db;"></div>
+                </div>
+            </div>
+        </div>
+    </body>
+
+</html>

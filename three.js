@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three/build/three.module.js';
-const { Vector3 } = THREE;
-export { THREE, Vector3 };
+const { Vector3, Vector2 } = THREE;
+export { THREE, Vector2, Vector3 };
 export const Z = new THREE.Vector3(0, 0, 1);
 
 import Stats from 'https://cdn.jsdelivr.net/npm/three/examples/jsm/libs/stats.module.min.js';

@@ -1,18 +1,21 @@
-import { Log, Storage } from './utils.js';
-import { Arm, Target, ArmSpeed } from './Arm.js';
-import Docker, { Handler as DockerHandler, Reset as DockerReset } from './Docker.js';
+import { Log, Storage, } from './utils.js';
+
+import { Arm, Target, ArmSpeed, ToggleVisual as _ToggleVisual } from './Arm.js';
+import Docker, { Handler as DockerHandler, Reset as DockerReset, Subdomain } from './Docker.js';
 //import DistanceSensor from './DistanceSensor.js';
 import { Meters } from './Controller.js';
 import { init as Wasm_init, Random } from './wasm.js';
-import UI, { Handlers as UIHandlers } from './UI.js';
-//import { CannonSpeed, Changed, Cannonx, CannonObject } from './cannon.js';
+import UI, { Handlers as UIHandlers, StdDev } from './UI.js';
+//import { OnIdChange, IDBinit, IDBDelete, IDBUpload } from './IndexedDB.js';
+
+import { CannonSpeed, Changed, Cannonx, CannonObject } from './cannon.js';
 
 //import Emotiv from './Emotiv/export.js'
 //Emotiv(Angles => renderer.domElement.addEventListener('Render', () => arm.Angles(Angles), { once: true }))
 
 import OBJLoader from './OBJLoader.js';
 
-const STDDEV = 2.5;
+const DEMENTION_3D = true;
 
 const Axes = document.querySelector("#Axes");
 console.log(Axes);
@@ -22,7 +25,7 @@ const storage = new Storage('Arm');
 let cannon, arm, state;
 
 function Render(lengths) {
-    console.log('Render', lengths);
+    console.log('Render');
 
     const Axis = Axes.lastElementChild;
     Axes.innerHTML = '';
@@ -38,24 +41,59 @@ function Render(lengths) {
     Meters(Axes.querySelectorAll('meter'));
 }
 
-const State = (class {
+const State = {
 
-    Coordinates(Coordinates) {
-        return Coordinates
-    }
+    Target(Coordinates) {
+        return [...arm.target, ...Coordinates];
+    },
+
+    Manipulation(Coordinates) {
+        if (!cannon)
+            return console.warn('cannon === undefined');
+
+        return [
+            ...cannon.CannonRotation,
+            ...Coordinates
+        ];
+    },
 
     DistanceSensor(Coordinates) {
         return [
             ...DistanceSensor(Coordinates.slice(-4, -2)),
             ...arm.target
         ]
+    },
+
+};
+
+function OnRender() {
+    Log('arm OnRender');
+    const Coordinates = arm.Nodes.slice(1).map(x => x.toArray().slice(0, DEMENTION_3D ? 3 : 2)).flat();
+
+    state = State.Manipulation(Coordinates);
+    Log({ state });
+
+    Object.assign(arm, { Coordinates });
+
+    if (!cannon)
+        return console.warn('cannon is', undefined);
+
+    let promise = Changed();
+    if (promise)
+        promise = promise.then(() => {
+            const { Nodes } = arm;
+
+            console.log(Nodes);
+            cannon.position.copy(Nodes[Nodes.length - 1]);
+        });
+    else {
+        promise = Promise.resolve();
+        console.warn('Changed returned undefined');
     }
+    promise.finally(() => arm.Emit('Resume'));
 
-    Manipulation(Coordinates) {
+}
 
-    }
-
-}).prototype;
 
 function UpdateArm(element) {
     console.log("UpdateArm");
@@ -63,47 +101,57 @@ function UpdateArm(element) {
     const Add = element && element.parentNode.lastElementChild === element;
     element && !Add && element.remove();
 
-    const lengths = Array.prototype.map.call(Axes.querySelectorAll('input[name="length"]'), ({ value }) => Number(value));
+    const lengths = Array.prototype.map.call(Axes.querySelectorAll('input[name="length"]'), ({ valueAsNumber }) => valueAsNumber);
     Add || lengths.pop();
     Log({ lengths });
     storage.Set(lengths);
     element && Render(lengths);
 
+    const rotations = Array.prototype.map.call(Axes.querySelectorAll('angle-input input'), ({ value }) => Number(value));
+    Log({ lengths, rotations });
+
     arm && arm.Dispose();
-    arm = new Arm(lengths);
+    arm = new Arm(lengths, rotations);
 
-    arm.On('Render', function () {
-        console.log('arm OnRender');
-        const Coordinates = [...arm.Nodes.slice(1)
-            .map(x => x.toArray().slice(0, 2)).flat(),
-            ...arm.target
-        ];
+    try {
+        OnRender();
+    }
+    catch (error) {
+        console.warn(error);
+    }
+    arm.On('Render', OnRender);
 
-        state = State.Coordinates(Coordinates);
-        Log({ state });
+    return typeof OnIdChange === 'undefined' ? Promise.resolve() : OnIdChange(arm, () => state);
+    //.then(arm.Render.bind(arm));
 
-        Object.assign(arm, { Coordinates });
-
-        if (cannon) {
-            const { Nodes } = arm;
-            Changed()
-                .then(() => {
-                    cannon.position.copy(Nodes[Nodes.length - 1])
-                    console.log(cannon.position)
-                });
-        }
-    });
-
-    return arm.Render();
 }
 
-//setInterval(() => arm.Angles([1, 2, -1]), 1000);
+const MathRandom = () => Math.random() * 2 - 1;
+async function Test() {
+    console.log('Test');
+    const promise = cannon && new Promise(resolve => arm.On('Resume', resolve));
+    await arm.Angles(Array(5).fill(0).map(MathRandom));
+    await promise;
+    Test();
+}
+//setTimeout(Test, 1000);
 
 export const Angles = (...args) => arm.Angles(...args);
 
-function Reward() {
-    const { Nodes } = arm;
-    return 0.5 - Target.position.distanceTo(Nodes[Nodes.length - 1]);
+const Reward = () => 0.3 - Target.position.distanceTo(arm.LastNode);
+
+let Last = 0;
+
+function Reward2() {
+
+    const [z] = cannon.CannonRotation;
+    const reward = Last - z;
+    Last = z;
+
+    if (Math.abs(reward) < .001)
+        return arm.LastNode.x / 10;
+
+    return reward;
 }
 
 let Break, actionPerStep = 1;
@@ -131,7 +179,7 @@ function EmitFactory(socket) {
 
         return Promise.race([
                 promise,
-                new Promise((resolve, reject) => setTimeout(reject, 10000))
+                new Promise((resolve, reject) => setTimeout(reject, 30000)),
             ])
             .finally(() => socket.off(event, Handler));
     };
@@ -139,7 +187,7 @@ function EmitFactory(socket) {
     return [Emit, EmitPromise];
 }
 
-async function Ep(Emit, EmitPromise, stddev = STDDEV) {
+async function Ep(Emit, EmitPromise, stddev = StdDev()) {
     const last_state = state;
     //const state=arm.Coorinates;
 
@@ -147,18 +195,20 @@ async function Ep(Emit, EmitPromise, stddev = STDDEV) {
     angles = Random(angles, stddev)
         .map(x => Math.Clip(x, -1, 1));
 
-    const reward = Reward();
-    if (reward > 0.3)
-        return;
+    const reward = Reward2();
+    //if (reward > 0)        return;
 
-    for (let i = 0; i < actionPerStep; i++)
+    for (let i = 0; i < actionPerStep; i++) {
+        const promise = cannon && new Promise(resolve => arm.On('Resume', resolve));
         await arm.Angles(angles);
+        await promise;
+    }
 
     const obj = {
         last_state,
         angles,
         reward,
-        next_state: state //arm.Coordinates,
+        next_state: state,
     };
     Log({ angles, ...obj });
 
@@ -166,7 +216,7 @@ async function Ep(Emit, EmitPromise, stddev = STDDEV) {
 
     stddev = await EmitPromise('Learn', stddev);
     Log({ stddev });
-    return stddev;
+    return StdDev(stddev);
 }
 
 async function main(socket) {
@@ -189,14 +239,13 @@ async function main(socket) {
     for (let ep = 0;; ep++) {
         let stddev;
 
-        arm.Reset();
+        //arm.Reset();
 
         for (let step = 0;; step++) {
             if (Break) {
                 Break = false;
                 return;
             }
-            console.log(socket);
             Log({ ep, step });
 
             try {
@@ -206,14 +255,14 @@ async function main(socket) {
                 stddev = _stddev;
             }
             catch (error) {
-                console.warn(new Error(error));
+                console.warn(error);
                 if (errors.includes(error)) {
                     console.error('Terminating due to a reoccurring error');
                     return;
                 }
                 error && errors.push(error);
 
-                arm.Reset();
+                //arm.Reset();
                 console.log('Retrying a new ep');
                 ep--;
                 break;
@@ -228,48 +277,71 @@ async function main(socket) {
 
 
 
-UI.then(UI => Object.assign(window, {
+UI.then(UI => ({
+    UI,
     UpdateArm,
     Reward,
+    IDBUpload: typeof IDBUpload === 'undefined' || IDBUpload,
+
+    OBJLoader: Path => OBJLoader(Path, UI.ObjFaces.value).then(object => CannonObject(object)),
+
+
+    Run: () => {
+        const Options = {
+            Actions: arm.lengths.length,
+            States: state.length
+        };
+        Log('Options', Options);
+        Docker(Options, UI.Subdomain.value)
+            .then(main);
+    },
+
+    Resume: () => DockerHandler().then(main),
 
     Reset: () => {
         Break = true;
         DockerReset();
-        arm && arm.Reset();
-    },
-    Run: () => {
-        const Options = {
-            ACTIONS: arm.lengths.length,
-            STATES: state.length
-        };
-        Log('Options', Options);
-        Docker(Options, UI.Subdomain.value).then(main);
+        arm.Reset();
     },
 
-    OBJLoader: Path => OBJLoader(Path, UI.ObjFaces.value).then(object => CannonObject(object)),
 
-}));
+
+})).then(obj => {
+    console.log(obj);
+    Object.assign(window, obj);
+}).catch(console.error);
 
 {
+    const ToggleVisual = bool => {
+        console.log('ToggleVisual', bool);
+        arm.Dispose();
+        _ToggleVisual(bool);
+        UpdateArm();
+    };
+
     const ActionPerStep = _actionPerStep => actionPerStep = _actionPerStep;
 
     UIHandlers([
+        () => ({ Subdomain }),
+        () => ({ ToggleVisual }),
         () => ({ ActionPerStep }),
         () => ({ ArmSpeed }),
         () => ({ CannonSpeed }),
         () => ({ Cannonx }),
         () => ({ CannonObject }),
-    ])
-};
+    ]);
+}
 
-window.addEventListener('DOMContentLoaded', () => {
-    Render( //storage.Get() ||
-        [1, 1, 1]);
 
-    typeof CannonObject !== 'undefined' &&
-        CannonObject().then(_cannon => cannon = _cannon);
+window.addEventListener('DOMContentLoaded', async function() {
+    Render(storage.Get() || [1, 1, 1]);
 
-    UpdateArm()
+    //IDBDelete();
+    typeof IDBinit === 'undefined' || await IDBinit().then(() => Log('IDB Initialized'));
+
+    (typeof CannonObject === 'undefined' ? Promise.resolve() : CannonObject().then(_cannon => cannon = _cannon))
+
+    .then(() => (typeof DockerHandler === 'undefined' ? UpdateArm() : UpdateArm()
         .then(DockerHandler)
-        .then(main);
+        .then(main)));
 });

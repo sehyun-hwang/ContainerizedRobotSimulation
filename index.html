@@ -15,6 +15,10 @@
                 transform: translateX(100%);
                 background-color: #48bb78;
             }
+
+            angle-input input+.angle-input-pivot {
+                display: none;
+            }
         </style>
         <script type="module" src="./index.js"></script>
     </head>
@@ -22,9 +26,9 @@
     <body class="flex flex-col h-screen overflow-hidden">
         <div class="flex-none flex py-3 bg-gray-200">
             <div class="flex flex-col text-white">
-                <button onclick="EmotivOrigin()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-blue-500 hover:bg-blue-400">Emotiv<br/>Origin</button>
-                <button onclick="Reset()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-yellow-500 hover:bg-yellow-400">Reset</button>
                 <button onclick="Run()" class="m-4 px-2 py-4 shadow rounded-full bg-green-500 hover:bg-green-400 ">Run</button>
+                <button onclick="Resume()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-blue-500 hover:bg-blue-400">Resume</button>
+                <button onclick="Reset()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-yellow-500 hover:bg-yellow-400">Reset</button>
             </div>
 
             <div class="flex-wrap flex-shrink-0 flex-grow relative mx-4 pr-4" style="flex-basis: 15rem; max-height: 90vh">
@@ -32,7 +36,7 @@
                     <accordion-shadow title="RL Server Settings">
                         <label>Server Endpoint</label>
                         <select id="Subdomain" class="w-full mb-5 px-4 py-2 appearance-none bg-white border border-gray-400 hover:border-gray-500 rounded shadow">
-                            <option selected>yonsei</option>
+                            <option>yonsei</option>
                             <option>kbdlab</option>
                             <option>iptime</option>
                         </select>
@@ -40,9 +44,9 @@
 
                     <accordion-shadow title="Arm Settings">
                         <label>Speed of the Arm</label>
-                        <input id="ArmSpeed" type="range" value="3" step="0.01" max="3" />
+                        <input id="ArmSpeed" type="range" value="3" step="0.01" max="10" />
                         <label>Action Per Step of the Arm</label>
-                        <input id="ActionPerStep" type="range" value="1" min="1" />
+                        <input id="ActionPerStep" type="range" value="1" min="1" max="10" />
 
                         <label>Speed of the Object</label>
                         <input id="CannonSpeed" type="range" step="0.01" max="1" />
@@ -50,7 +54,8 @@
 
                     <accordion-shadow title="Target Object Settings">
                         <select id="CannonObject" class="w-full mb-5 px-4 py-2 appearance-none bg-white border border-gray-400 hover:border-gray-500 rounded shadow">
-                            <option selected>Box</option>
+                            <option selected>TorusGeometry</option>
+                            <option>BoxGeometry</option>
                             <option>TorusKnotGeometry</option>
                         </select>
 
@@ -91,7 +96,12 @@
             </div>
 
             <div>
-                <toggle- title="Improve Visual"></toggle->
+                <label>Std. Dev. of Random Actions</label>
+                <input id="StdDev" type="range" value="3" min="0" max="3" step="0.001" />
+                <toggle- id="ToggleVisual" title="Toggle Visual"></toggle->
+                <button onclick="IDBUpload()">Upload Data to S3<button>
+                <label>Training ID</label>
+                <p id="id"></p>
             </div>
 
             <div class="h-full text-center align-middle whitespace-no-wrap" style="line-height: 5">
@@ -102,14 +112,13 @@
             </div>
 
 
-
             <form id="Axes" onchange="UpdateArm()" class="flex flex-grow overflow-x-scroll">
                 <div class="w-24 ml-2 flex-none">
                     <button type="button" onclick="UpdateArm(this.parentNode)" class="w-full py-2 text-white bg-blue-500 hover:bg-blue-400">Add</button>
-                    <input type="number" name="length" min="0" step="0.1" value="1" placeholder="Length" class="w-full appearance-none mt-4 p-2 border rounded shadow focus:shadow-outline" />
-                    <angle-input></angle-input>
-                    <meter class="w-full" min="-1" max="1" value="0"></meter>
-                </div>
+                <input type="number" name="length" min="0" step="0.1" value="1" placeholder="Length" class="w-full appearance-none mt-4 p-2 border rounded shadow focus:shadow-outline" />
+                <angle-input></angle-input>
+                <meter class="w-full" min="-1" max="1" value="0"></meter>
+            </div>
             </form>
         </div>
 

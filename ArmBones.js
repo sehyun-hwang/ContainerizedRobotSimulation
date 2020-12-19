@@ -69,7 +69,7 @@ export function constructor(that) {
     mesh.bind(skeleton);
     mesh.translateY(1.5);
 
-    Object.assign(that, { sizing, mesh, bones: skeleton.bones });
+    Object.assign(that, { sizing, mesh, bones: skeleton.bones, Mesh3D: mesh });
     scene.add(mesh);
 }
 
