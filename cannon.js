@@ -104,7 +104,7 @@ export const CannonObject = (Custom = 'TorusGeometry') => init.then(({
         });
 
         let Intersection;
-        OnChange = async function () {
+        OnChange = async function() {
             console.log('OnChange');
             console.time(++timer);
 
@@ -170,6 +170,9 @@ export const CannonObject = (Custom = 'TorusGeometry') => init.then(({
                     constraint.setMotorSpeed(-magnitude * speed);
                     console.log({ magnitude });
 
+                    if (!Finished)
+                        return console.warn('Finished is', Finished);
+
                     body.angularVelocity.almostZero() ? Finished() : AttachStep();
                     console.timeEnd(timer);
                 });
@@ -194,7 +197,7 @@ export const CannonObject = (Custom = 'TorusGeometry') => init.then(({
 
                 let resolve;
                 const promise = new Promise(_resolve => resolve = _resolve);
-                Finished = function () {
+                Finished = function() {
                     console.log('Finished');
                     i = 0;
                     Finished = undefined;
@@ -216,7 +219,7 @@ export const CannonObject = (Custom = 'TorusGeometry') => init.then(({
         }
 
         Object.defineProperty(object, "CannonRotation", {
-            get: function () {
+            get: function() {
                 const z = object2.rotation._z;
                 return [z, z - Math.PI];
             }

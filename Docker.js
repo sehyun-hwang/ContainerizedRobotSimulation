@@ -15,7 +15,9 @@ export function Reset() {
     clearInterval(interval);
 
     const url = new URL(window.location);
-    url.search = '';
+    const searchparams = new URLSearchParams(url.search);
+    searchparams.delete('Container');
+    url.search = searchparams;
     const path = url.toString();
     window.history.pushState({ path }, '', path);
 }
@@ -41,9 +43,10 @@ export const Handler = (data = new URLSearchParams(window.location.search).get('
         Container = () => container;
 
         socket = io((url => {
-            url.search = new URLSearchParams({
-                Container: data,
-            }).toString();
+            const searchparams = new URLSearchParams(url.search);
+            searchparams.delete('Container');
+            searchparams.append('Container', data);
+            url.search = searchparams;
             const path = url.toString();
             window.history.pushState({ path }, '', path);
 

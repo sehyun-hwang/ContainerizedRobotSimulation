@@ -82,8 +82,6 @@ function OnRender() {
     if (promise)
         promise = promise.then(() => {
             const { Nodes } = arm;
-
-            console.log(Nodes);
             cannon.position.copy(Nodes[Nodes.length - 1]);
         });
     else {

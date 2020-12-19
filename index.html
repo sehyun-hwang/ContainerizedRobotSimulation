@@ -21,6 +21,10 @@
             }
         </style>
         <script type="module" src="./index.js"></script>
+
+        <!--#if expr="$QUERY_STRING = /test/" -->
+        <!--#include file="test.html" -->
+        <!--#endif -->
     </head>
 
     <body class="flex flex-col h-screen overflow-hidden">
@@ -104,7 +108,7 @@
                 <p id="id"></p>
             </div>
 
-            <div class="h-full text-center align-middle whitespace-no-wrap" style="line-height: 5">
+            <div class="h-full text-center align-middle whitespace-nowrap" style="line-height: 5">
                 <p style="line-height: 4">Joints</p>
                 <p>Length [m]</p>
                 <p>Rotation [&deg;]</p>

@@ -1,0 +1,2 @@
+import IPython
+print(IPython.__version__)

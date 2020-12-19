@@ -60,7 +60,11 @@ export class Arm {
         });
 
         try {
-            ImproveVisual && constructor(this);
+            if (ImproveVisual) {
+                console.group();
+                constructor(this);
+                console.groupEnd();
+            }
             this.Angles();
         }
         catch (error) {

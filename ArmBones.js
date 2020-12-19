@@ -24,70 +24,61 @@ export function constructor(that) {
     const bones = that.Map(() => new THREE.Bone(), 1);
     const [bone] = bones;
 
-    console.log(sizing);
-    bone.position.set(0, 0, 0);
-
     const position = geometry.attributes.position;
     const vertex = new Vector3();
 
     const skinIndices = [];
     const skinWeights = [];
 
-    console.groupCollapsed();
-
     for (let i = 0; i < position.count; i++) {
         vertex.fromBufferAttribute(position, i);
         const y = vertex.y + sizing.halfHeight;
         const ratio = y / sizing.segmentHeight;
-        const skinIndex = Math.floor(ratio);
-        const skinWeight = (y % sizing.segmentHeight) / sizing.segmentHeight;
+        const skinIndex = Math.round(ratio);
 
-        console.log(y, ratio, skinIndex);
         skinIndices.push(skinIndex, skinIndex + 1, 0, 0);
-        skinWeights.push(1 - skinWeight, skinWeight, 0, 0);
+        skinWeights.push(1, 0, 0, 0);
     }
-    console.groupEnd();
+
+    console.log({ skinIndices, skinWeights });
 
     geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
     geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
 
-    const material = new THREE.MeshPhongMaterial({
+    const mesh = new THREE.SkinnedMesh(geometry, new THREE.MeshPhongMaterial({
         side: THREE.DoubleSide,
         skinning: true,
-        //flatShading: true,
-    });
-    const mesh = new THREE.SkinnedMesh(geometry, material);
+        flatShading: true,
+    }));
+    mesh.rotateZ(-Math.PI / 2);
 
-    mesh.add(bone);
-    bone.position.set(0, -1.5, 0);
-    bones.slice(1).forEach(({ position }, i) => position.set(0, i * sizing.segmentHeight, 0));
+    bone.position.set(0, -sizing.halfHeight, 0);
+    bones.slice(1).forEach(({ position }) => position.set(0, sizing.segmentHeight, 0));
     bones.Between().forEach(([x, y]) => x.add(y));
 
-    mesh.rotateZ(-Math.PI / 2);
     const skeleton = new THREE.Skeleton(bones);
-
+    mesh.add(bone);
     mesh.bind(skeleton);
-    mesh.translateY(1.5);
+    mesh.translateY(lengths[0] + sizing.segmentHeight);
 
     Object.assign(that, { sizing, mesh, bones: skeleton.bones, Mesh3D: mesh });
     scene.add(mesh);
 }
 
 const Quaternion = new THREE.Quaternion();
+const Quaternion2 = new THREE.Quaternion();
+
 export function Render(that) {
-    const { bones, BeforeTranslation, X } = that;
+    const { bones, BeforeTranslation, X, Z } = that;
     console.group();
+    Quaternion2.setFromAxisAngle(Z, Math.PI / 2);
     [
         X,
         ...BeforeTranslation,
     ].Between().forEach(([x, y], i) => {
-        const { rotation } = bones[i + 1];
-        Quaternion.setFromUnitVectors(x, y);
-        //rotation.set(0,0,0)
+        const { rotation } = bones[i];
+        Quaternion.setFromUnitVectors(x.clone().applyQuaternion(Quaternion2), y.clone().applyQuaternion(Quaternion2));
         rotation.setFromQuaternion(Quaternion);
     });
-    console.log(bones); {
-
-    }
     console.groupEnd();
 }

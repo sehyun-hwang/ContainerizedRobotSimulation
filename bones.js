@@ -52,7 +52,7 @@ function initScene() {
 	scene.add(lights[0]);
 	scene.add(lights[1]);
 	scene.add(lights[2]);
-	window.addEventListener('resize', function () {
+	window.addEventListener('resize', function() {
 		camera.aspect = window.innerWidth / window.innerHeight;
 		camera.updateProjectionMatrix();
 		renderer.setSize(window.innerWidth, window.innerHeight);
@@ -66,7 +66,7 @@ function createGeometry(sizing) {
 		5, // radiusBottom
 		sizing.height, // height
 		8, // radiusSegments
-		sizing.segmentCount * 3, // heightSegments
+		sizing.segmentCount * 1, // heightSegments
 		true // openEnded
 	);
 	const position = geometry.attributes.position;
@@ -81,7 +81,9 @@ function createGeometry(sizing) {
 		skinIndices.push(
 			skinIndex, skinIndex + 1, 0, 0);
 		skinWeights.push(1 - skinWeight, skinWeight, 0, 0);
+		console.log(y, y % sizing.segmentHeight, skinIndex);
 	}
+
 	geometry.setAttribute('skinIndex', new Uint16BufferAttribute(skinIndices, 4));
 	geometry.setAttribute('skinWeight', new Float32BufferAttribute(skinWeights,
 		4));
@@ -101,6 +103,7 @@ function createBones(sizing) {
 		prevBone.add(bone);
 		prevBone = bone;
 	}
+	console.log(bones)
 	return bones;
 }
 
@@ -120,8 +123,7 @@ function createMesh(geometry, bones) {
 	mesh.bind(skeleton);
 	skeletonHelper = new SkeletonHelper(mesh);
 	skeletonHelper.material.linewidth = 2;
-	scene.add(
-		skeletonHelper);
+	scene.add(skeletonHelper);
 	bones[0].position.set(0, 0, 0)
 	bones[0].rotateZ(-Math.PI / 2)
 	//	mesh.rotateZ(-Math.PI / 2)
