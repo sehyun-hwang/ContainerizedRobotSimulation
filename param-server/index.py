@@ -9,7 +9,8 @@ Params = json.loads(b64decode(environ.get("PARAMS", 'e30=')))
 print('Host', host)
 print('Params', Params)
 
-API = 'https://proxy.hwangsehyun.com/robot/paramserver/'
+API_BASE = 'https://proxy.hwangsehyun.com'
+API = API_BASE + '/robot/paramserver/'
 NETWORK = '.network'
 PORT = 8500
 ID = Params.get('id', 59)
@@ -154,6 +155,21 @@ def build_model():
 
     model.compile(loss='mse', optimizer=optimizer, metrics=['mae', 'mse'])
     return model
+    
+    
+class PrintNumber:
+    def __init__(self, dataset):
+        self.i = 0
+        self.dataset = dataset
+
+    def __iter__(self):
+        self.iter = iter(self.dataset)
+        return self
+
+    def __next__(self):
+        requests.
+        self.i += 1
+        return next(self.iter)
 
 
 def IteratorDataset():

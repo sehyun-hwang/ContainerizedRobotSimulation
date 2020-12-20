@@ -1,161 +1,72 @@
 import express from 'express';
+import Format from 'pg-format';
 
-import { PathParser } from "utils";
-import Run, { Docker } from "utils/Docker";
-import router from "./Router.js";
+import Client from 'utils/pg';
+import { Router, Router2 } from "./ServerRouter.js";
+import ProxyRouter from "./ServerProxy.js";
 
-const Image = 'tensorflow/tensorflow';
-const docker = Docker();
-const { App } = PathParser(new Error());
+const client = Client();
+client.connect();
 
+export const router = express.Router()
+    .use('/', Router)
+    .use('/', Router2)
+    .use('/proxy', ProxyRouter);
 
-const ComplexRouter = express.Router()
-    .use(express.json())
-    .use(express.raw({
-        type: 'text/plain'
-    }))
-    .use((req, res, next) => {
-        console.log('ComplexRouter');
-        const { body } = req;
+let io, Start, Time, results = [];
 
-        const buffer = typeof body instanceof Buffer ? body : Buffer.from(JSON.stringify(body));
-        req.body = buffer.toString('base64');
-        next();
+export const io_of = _io => {
+    io = _io;
+
+    io.on('connect', socket => {
+        const { id } = socket;
+
+        socket.on('data', data => {
+            const obj = { id, Start, Time, ...data };
+            console.log(obj);
+            results.push([...Object.values(obj)]);
+        });
     });
 
-
-function ErrorHandler(res, error) {
-    console.log(error);
-    res.status(error.statusCode || 500).json(error);
-}
-
-
-router.get('/ddpg', ({ query: { Subdomain } }, res) => Docker(Subdomain).listContainers({
-        all: true,
-        filters: { ancestor: ['param-server'] },
-    }).then(data => {
-        console.log(data);
-        res.json(data);
-    })
-    .catch(error => ErrorHandler(res, error)));
-
-
-ComplexRouter.post('/ddpg', ({ query: { Subdomain, name }, body }, res) => Run({
-        name,
-        Labels: { APP: App },
-        Image,
-        Env: [
-            'PARAMS=' + body,
-            'PIP=python-socketio[client]'
-        ],
-        Hostname: name,
-        HostConfig: {
-            Binds: ['$/finger_inverse_kinematic:/root'],
-            //AutoRemove: true,
-        },
-    }, Subdomain)
-
-    .then(emitter => emitter.once('Name', Name => res.send(Name)))
-
-    .catch(error => ErrorHandler(res, error)));
-
-
-const PIP = {
-    index: 'pandas',
-    example: 'tensorflow-datasets',
-    localhost: 'tensorflow-datasets',
 };
 
+let interval;
 
-function Env(file) {
-    const arr = [];
-    if (file in PIP);
-    else
-        throw new Error('Invalid file');
-
-    arr.push('PIP=' + PIP[file]);
-    return arr;
+export function exit() {
+    clearInterval(interval);
+    io.emit('Reset');
 }
-const Keys = Object.keys(PIP);
 
+export const command = function() {
+    console.log('Reset and Reload');
+    io.emit('Reset');
+    io.emit('Reload');
 
-router.get('/paramserver', (req, res) => res.json(Keys))
+    setTimeout(() => {
+        console.log('Run');
+        io.emit('Run');
+        Start = new Date();
 
+        clearInterval(interval);
+        interval = setInterval(function() {
+            Time = new Date();
+            io.allSockets().then(({ size }) => console.log({ size }));
+            io.emit('data');
 
-ComplexRouter.put('/paramserver/:file', ({
-        headers,
-        params: { file },
-        query: { name },
-        body
-    }, res) => Run({
-        name,
-        Labels: {
-            APP: 'robot',
-            PARAM_SERVER: name ? name.split('-')[0] : '',
-        },
-        Env: [
-            'GRPC_VERBOSITY=DEBUG',
-            "PARAMS=" + body,
-            ...Env(file)
-        ],
-        Image,
-        Hostname: name,
-        HostConfig: {
-            AutoRemove: !name,
-        },
-        Cmd: ['bash', 'Docker.sh', 'param-server', file]
-    })
+            console.log(results);
 
-    .then(async emitter => {
-        const Stream = new Promise(resolve => emitter.once('Stream', resolve));
-        const name = await new Promise(resolve => emitter.once('Name', resolve));
+            results.length && client.query(Format(`
+                INSERT INTO robot_performance
+                (socket, start, time, steps, container)
+                VALUES %L
+            `, results))
+                .then(({ rowCount }) => {
+                    console.log({ rowCount });
+                    results = [];
+                });
 
-        headers.accept === 'text/plain' ? res.send(name) : Stream.then(Stream => {
-            res.writeHead(200, {
-                'Content-Type': 'application/octet-stream',
-                'Access-Control-Expose-Headers': 'X-Container',
-                'X-Container': name
-            });
-            Stream.pipe(res);
-        });
-    })
+        }, 1000);
 
-    .catch(error => ErrorHandler(res, error)));
-
-
-const Workers = new Map();
-
-router.get('/paramserver/:name', ({ params: { name } }, res) => docker.listContainers({
-            all: true,
-            filters: {
-                label: ["PARAM_SERVER=" + name.split('-')[1]]
-            }
-        })
-
-        .then(async data => {
-            const Ids = data.map(({ Id }) => Id);
-            console.log('param-servers:', Ids);
-            Workers.set(name, Ids);
-
-            const Logs = await Promise.all(Ids.map(x => docker.getContainer(x).logs({
-                stdout: true,
-                stderr: true,
-            })));
-
-            data.forEach((x, i) => x.Logs = Logs[i].toString());
-            data.sort((a, b) => a.Created - b.Created);
-            res.json(data);
-        })
-
-        .catch(error => {
-            console.log(error);
-            res.status(500).json(error);
-        }))
-
-    .delete('/paramserver/:name', ({ params: { name } }, res) => Promise.all(Workers.has(name) &&
-            Workers.get(name).map(x => docker.getContainer(x).remove()))
-        .then(data => res.json(data))
-        .catch(error => ErrorHandler(res, error)));
-
-router.use('/', ComplexRouter);
-export { router };
+        setTimeout(exit, 60000);
+    }, 10000);
+};

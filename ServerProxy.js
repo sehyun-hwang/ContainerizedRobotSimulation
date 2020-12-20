@@ -3,14 +3,16 @@ import proxy from 'http-proxy-middleware';
 import RawBody from "raw-body";
 
 import { PathParser } from "utils";
-const { App } = PathParser(new Error());
 
+const { App } = PathParser(new Error());
 const Cache = {};
 const ContentTypes = {};
+
+
 export default express.Router()
-    .use("/proxy", ({ originalUrl, headers }, res, next) => {
+    .use("/", ({ originalUrl, headers }, res, next) => {
         const cache = Cache[originalUrl];
-        if(!cache) return next();
+        if (!cache) return next();
 
         const SendCache = "etag" in headers && headers.pragma && !headers.pragma.includes("no-cache");
         res.set("Content-Type", ContentTypes[originalUrl])
@@ -29,7 +31,3 @@ export default express.Router()
                 .catch(console.log);
         }
     }))
-
-    .use('/', express.static(App, {
-        etag: false
-    }));

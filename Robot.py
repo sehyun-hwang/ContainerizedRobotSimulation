@@ -6,6 +6,7 @@ from ddpg import DDPG
 import config
 
 from os import getuid as UID, environ
+from os.path import isfile
 from random import random, randrange
 
 from socketio import Client as IO, ClientNamespace as Namespace
@@ -17,6 +18,8 @@ import numpy as np
 
 PARAMS = json.loads(b64decode(environ.get("PARAMS", 'e30=')))
 print(PARAMS)
+
+MODEL_PATH = 'Model'
 
 
 def default(obj):
@@ -93,6 +96,12 @@ def On(value, key=''):
 
 def Learn(var):
     print(model.memory_counter, model.memory_size)
+    # if model.memory_counter % 1000:
+    #     print('Model not saved')
+    # else:
+    #     model.save_model(MODEL_PATH)
+    #     print('Model saved')
+
     if model.memory_counter > model.memory_size:
         var *= .9995
         model.learn()
@@ -122,8 +131,11 @@ def main():
 
 
 if __name__ == '__main__':
-
     model = DDPG(PARAMS['Actions'], PARAMS['States'], 1)
+    if isfile(MODEL_PATH):
+        model.load_model(MODEL_PATH)
+        print('Model loaded')
+
     On(model, "model")
     On(Learn)
     main()

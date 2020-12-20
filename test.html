@@ -1,1 +1,16 @@
 <!--#include file="/head.html" -->
+
+<script>
+    socket.on('Run', () => window.Run())
+        .on('Reload', () => location.reload(true))
+        .on('Reset', () => window.Reset())
+        .on('data', () => {
+            const Container = new URLSearchParams(location.search).get('Container');
+
+            socket.emit('data', {
+                Steps: window.Steps,
+                Container: Container && Container.split('-')[0],
+            })
+
+        })
+</script>

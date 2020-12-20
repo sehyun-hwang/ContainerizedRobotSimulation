@@ -54,7 +54,7 @@ export class Arm {
         Object.assign(this, {
             geometry,
             line,
-            rotations,
+            rotations: rotations.map(DEG2RAD),
             Emitter: document.createElement('div'),
             Arrows: [],
         });

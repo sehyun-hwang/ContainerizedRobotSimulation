@@ -8,7 +8,7 @@ import { init as Wasm_init, Random } from './wasm.js';
 import UI, { Handlers as UIHandlers, StdDev } from './UI.js';
 //import { OnIdChange, IDBinit, IDBDelete, IDBUpload } from './IndexedDB.js';
 
-import { CannonSpeed, Changed, Cannonx, CannonObject } from './cannon.js';
+//import { CannonSpeed, Changed, Cannonx, CannonObject } from './cannon.js';
 
 //import Emotiv from './Emotiv/export.js'
 //Emotiv(Angles => renderer.domElement.addEventListener('Render', () => arm.Angles(Angles), { once: true }))
@@ -70,7 +70,7 @@ function OnRender() {
     Log('arm OnRender');
     const Coordinates = arm.Nodes.slice(1).map(x => x.toArray().slice(0, DEMENTION_3D ? 3 : 2)).flat();
 
-    state = State.Manipulation(Coordinates);
+    state = State.Target(Coordinates);
     Log({ state });
 
     Object.assign(arm, { Coordinates });
@@ -136,7 +136,7 @@ async function Test() {
 
 export const Angles = (...args) => arm.Angles(...args);
 
-const Reward = () => 0.3 - Target.position.distanceTo(arm.LastNode);
+const Reward = () => 0.5 - Target.position.distanceTo(arm.LastNode);
 
 let Last = 0;
 
@@ -152,7 +152,8 @@ function Reward2() {
     return reward;
 }
 
-let Break, actionPerStep = 1;
+let Break, actionPerStep = 1,
+    steps = 0;
 
 function EmitFactory(socket) {
     const Emit = socket.emit.bind(socket, 'Container');
@@ -179,6 +180,7 @@ function EmitFactory(socket) {
                 promise,
                 new Promise((resolve, reject) => setTimeout(reject, 30000)),
             ])
+            .catch(console.log)
             .finally(() => socket.off(event, Handler));
     };
 
@@ -187,14 +189,14 @@ function EmitFactory(socket) {
 
 async function Ep(Emit, EmitPromise, stddev = StdDev()) {
     const last_state = state;
-    //const state=arm.Coorinates;
 
     let angles = await EmitPromise('model', 'choose_action', state);
     angles = Random(angles, stddev)
         .map(x => Math.Clip(x, -1, 1));
 
-    const reward = Reward2();
-    //if (reward > 0)        return;
+    const reward = Reward();
+    if (reward > 0)
+        return;
 
     for (let i = 0; i < actionPerStep; i++) {
         const promise = cannon && new Promise(resolve => arm.On('Resume', resolve));
@@ -222,9 +224,6 @@ async function main(socket) {
     Break = false;
 
     Log('Handler attatched to socket');
-
-    console.log(state);
-    socket.on('ContainerConnect', console.log);
     //return;
 
     await new Promise(resolve => socket.once('ContainerConnect', resolve));
@@ -237,14 +236,16 @@ async function main(socket) {
     for (let ep = 0;; ep++) {
         let stddev;
 
-        //arm.Reset();
+        arm.Reset();
 
         for (let step = 0;; step++) {
             if (Break) {
                 Break = false;
                 return;
             }
-            Log({ ep, step });
+            const { Steps } = window;
+            Log({ ep, step, Steps });
+            window.Steps++;
 
             try {
                 const _stddev = await EpBinded(stddev);
@@ -260,7 +261,7 @@ async function main(socket) {
                 }
                 error && errors.push(error);
 
-                //arm.Reset();
+                arm.Reset();
                 console.log('Retrying a new ep');
                 ep--;
                 break;
@@ -277,6 +278,8 @@ async function main(socket) {
 
 UI.then(UI => ({
     UI,
+    Steps: 0,
+
     UpdateArm,
     Reward,
     IDBUpload: typeof IDBUpload === 'undefined' || IDBUpload,
@@ -298,10 +301,10 @@ UI.then(UI => ({
 
     Reset: () => {
         Break = true;
+        window.Steps = 0;
         DockerReset();
         arm.Reset();
     },
-
 
 
 })).then(obj => {
