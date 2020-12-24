@@ -36,13 +36,12 @@ def train():
                 state = next_state
 
                 if done:
+                    with open('log.txt', 'a') as File:
+                        File.write(f'{step} {rewards}\n')
+                        print(f'Done in {step} steps, episode: {e}/{epochs}, rewards: {rewards}')
                     break
 
             env.render()
-
-        with open('log.txt', 'a') as File:
-            File.write(f'{step} {rewards}\n')
-            print(f'Done in {step} steps, episode: {e}/{epochs}, rewards: {rewards}')
 
         if e % 1000 == 0:
             model.save_model(model_path)
