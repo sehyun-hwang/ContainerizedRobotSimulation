@@ -5,6 +5,8 @@ from ddpg import DDPG
 import config
 import argparse
 
+DoneSteps = [0] * 10
+
 
 def train():
     var = 5
@@ -34,10 +36,14 @@ def train():
                 state = next_state
 
                 if done:
-                    print('episode: {}/{}, rewards: {}'.format(e, epochs, rewards))
                     break
 
             env.render()
+
+        with open('log.txt', 'a') as File:
+            File.write(f'{step} {rewards}\n')
+            print(f'Done in {step} steps, episode: {e}/{epochs}, rewards: {rewards}')
+
         if e % 1000 == 0:
             model.save_model(model_path)
 
@@ -45,16 +51,18 @@ def train():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--model_type', type=int, default=0,
+        '--model_type', type=int, default=1,
         help='model type index, 0 for regression model and 1 for reinforcement learning model, default 0'
     )
     parser.add_argument(
         '--regress_path', type=str, default=config.REGRESSION_MODEL_PATH,
-        help='path to save regression model weight file, default {}'.format(config.REGRESSION_MODEL_PATH)
+        help='path to save regression model weight file, default {}'.format(
+            config.REGRESSION_MODEL_PATH)
     )
     parser.add_argument(
         '--rl_path', type=str, default=config.RL_MODEL_PATH,
-        help='path to save ddpg model weight file, default {}'.format(config.RL_MODEL_PATH)
+        help='path to save ddpg model weight file, default {}'.format(
+            config.RL_MODEL_PATH)
     )
     ARGS = parser.parse_args()
 
@@ -74,5 +82,6 @@ if __name__ == '__main__':
         steps = 300
     else:
         raise ValueError('unknown model type')
-
+    with open('log.txt', 'w') as File:
+        print('Truncated')
     train()
