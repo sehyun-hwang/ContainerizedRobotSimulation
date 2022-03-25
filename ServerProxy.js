@@ -4,7 +4,7 @@ import RawBody from "raw-body";
 
 import { PathParser } from "utils";
 
-const { App } = PathParser(new Error());
+const { App } = PathParser(import.meta.url);
 const Cache = {};
 const ContentTypes = {};
 

@@ -1,15 +1,16 @@
-import { Log } from './utils.js';
 import { Angles } from './index.js';
+
+const SPEED = 0.25;
+const axes = '0 1 5 6'.split(' ');
 
 const element = document.querySelector('#Controls');
 const Title = element.querySelector('h1');
 const Buttons = element.querySelector('#Buttons');
 
+
 let Meters;
 const _Meters = _Meters => Meters = _Meters;
 export { _Meters as Meters };
-
-const axes = '0 1 5 6'.split(' ');
 
 
 let Last = [];
@@ -74,7 +75,7 @@ window.addEventListener("keydown", ({ key }) => {
     }
 
     console.log(key);
-    Angles(Array.prototype.map.call(Meters, x => x.value));
+    Angles(Array.prototype.map.call(Meters, x => SPEED * x.value));
 });
 
 window.addEventListener("keyup", ({ key }) => {

@@ -1,6 +1,7 @@
 import 'https://www.hwangsehyun.com/utils/Accordion.js';
 import 'https://www.hwangsehyun.com/utils/Toggle.js';
 import Mode from './UIMode.js';
+import { Endpoints } from './Docker.js';
 
 let UI;
 const promise = new Promise(resolve => UI = resolve);
@@ -23,7 +24,6 @@ export const Checkboxes = [];
 function Range(x) {
     const Wrapper = document.createElement('div');
     const Output = document.createElement('output');
-
     x.classList.add('w-full', 'mb-5');
     Output.classList.add('float-right');
 
@@ -38,10 +38,28 @@ function Range(x) {
 }
 
 
+export const EndpointsInit = element => Endpoints.then(Endpoints => {
+    console.log(Endpoints);
+
+    Object.entries(Endpoints).forEach(([Id, { PublicURL }]) => {
+        const option = document.createElement('option');
+        option.value = Id;
+        option.textContent = PublicURL;
+        element.appendChild(option);
+    });
+
+    const { firstElementChild } = element;
+    firstElementChild.selected = true;
+    return firstElementChild.value;
+});
+
+
 window.addEventListener('DOMContentLoaded', () => UI(Array.prototype.map.call(document.querySelectorAll('accordion-shadow'), ({ shadowRoot }) => {
         Checkboxes.push(shadowRoot.querySelector('input[type="checkbox"]'));
         const Ranges = shadowRoot.querySelectorAll('input[type="range"]');
         Ranges.forEach(Range);
+
+
 
         return [
             ...Ranges,
@@ -79,6 +97,8 @@ window.addEventListener('DOMContentLoaded', function() {
     });
 
 });
+
+
 
 const StdDevElement = document.querySelector('#StdDev') || { valueAsNumber: 3 };
 StdDevElement.addEventListener('input', () => StdDevElement.Dirty = true);

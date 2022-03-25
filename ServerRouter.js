@@ -1,11 +1,15 @@
+import { createWriteStream } from 'fs';
 import express from 'express';
 
 import Run, { Docker } from "utils/Docker";
 import { PathParser } from "utils";
 
-const Image = 'tensorflow/tensorflow';
-const docker = Docker();
-const { App } = PathParser(new Error());
+const Image = ({ Architecture }) => Architecture === 'aarch64' ?
+    'linaro/tensorflow-arm-neoverse-n1:2.3.0-eigen' :
+    'tensorflow/tensorflow';
+const { App } = PathParser(
+    import.meta.url);
+const LogStream = createWriteStream(`${App}/param-server/${Date.now()}.txt`);
 
 export const Router = express.Router();
 const ComplexRouter = express.Router()
@@ -27,6 +31,13 @@ function ErrorHandler(res, error) {
     console.log(error);
     res.status(error.statusCode || 500).json(error);
 }
+
+
+Router.post('/log', express.text(), ({ body }, res) => {
+    console.log(body);
+    LogStream.write(body);
+    res.status(20).send();
+});
 
 
 Router.get('/ddpg', ({ query: { Subdomain } }, res) => Docker(Subdomain).listContainers({

@@ -8,8 +8,9 @@ export const ToggleVisual = bool => ImproveVisual = bool;
 const DEG2RAD = deg => deg / 180 * Math.PI;
 const RAD2DEG = rad => rad * 180 / Math.PI;
 
-let speed = DEG2RAD(1);
-export const ArmSpeed = _speed => speed = DEG2RAD(_speed);
+const SPEED = 5;
+let speed = DEG2RAD(SPEED);
+export const ArmSpeed = _speed => speed = DEG2RAD(_speed * SPEED);
 
 export const Target = new THREE.Mesh(
     new THREE.SphereBufferGeometry(0.1),

@@ -1,10 +1,10 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.113/build/three.module.js';
 const { Vector3, Vector2 } = THREE;
 export { THREE, Vector2, Vector3 };
 export const Z = new THREE.Vector3(0, 0, 1);
 
-import Stats from 'https://cdn.jsdelivr.net/npm/three/examples/jsm/libs/stats.module.min.js';
-import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three/examples/jsm/controls/OrbitControls.js";
+import Stats from 'https://cdn.jsdelivr.net/npm/three@0.113/examples/jsm/libs/stats.module.min.js';
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.113/examples/jsm/controls/OrbitControls.js";
 
 import Load from './three-loader.js';
 export { Load };

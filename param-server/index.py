@@ -9,8 +9,8 @@ Params = json.loads(b64decode(environ.get("PARAMS", 'e30=')))
 print('Host', host)
 print('Params', Params)
 
-API_BASE = 'https://proxy.hwangsehyun.com'
-API = API_BASE + '/robot/paramserver/'
+API_BASE = 'https://proxy.hwangsehyun.com/robot'
+API = API_BASE + '/paramserver/'
 NETWORK = '.network'
 PORT = 8500
 ID = Params.get('id', 59)
@@ -155,19 +155,18 @@ def build_model():
 
     model.compile(loss='mse', optimizer=optimizer, metrics=['mae', 'mse'])
     return model
-    
-    
-class PrintNumber:
+
+
+class CountableDataset:
     def __init__(self, dataset):
         self.i = 0
-        self.dataset = dataset
+        self.iter = iter(dataset)
 
     def __iter__(self):
-        self.iter = iter(self.dataset)
         return self
 
     def __next__(self):
-        requests.
+        print(self.i)
         self.i += 1
         return next(self.iter)
 
@@ -218,7 +217,7 @@ def step_fn(iterator):
     return strategy.reduce(tf.distribute.ReduceOp.SUM, losses, axis=None)
 
 
-num_epoches = 10
+num_epoches = 100
 for i in range(num_epoches):
     mse.reset_states()
     coordinator.schedule(step_fn, args=(per_worker_iterator, ))

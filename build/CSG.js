@@ -1,1 +1,1 @@
-import './web_modules/three-csg.js';
+import './_snowpack/pkg/three-csg.js';

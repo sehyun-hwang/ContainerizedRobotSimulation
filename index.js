@@ -1,11 +1,11 @@
 import { Log, Storage, } from './utils.js';
 
 import { Arm, Target, ArmSpeed, ToggleVisual as _ToggleVisual } from './Arm.js';
-import Docker, { Handler as DockerHandler, Reset as DockerReset, Subdomain } from './Docker.js';
+import Docker, { Handler as DockerHandler, Reset as DockerReset, Endpoint } from './Docker.js';
 //import DistanceSensor from './DistanceSensor.js';
 import { Meters } from './Controller.js';
 import { init as Wasm_init, Random } from './wasm.js';
-import UI, { Handlers as UIHandlers, StdDev } from './UI.js';
+import UI, { Handlers as UIHandlers, EndpointsInit, StdDev } from './UI.js';
 //import { OnIdChange, IDBinit, IDBDelete, IDBUpload } from './IndexedDB.js';
 
 //import { CannonSpeed, Changed, Cannonx, CannonObject } from './cannon.js';
@@ -76,7 +76,7 @@ function OnRender() {
     Object.assign(arm, { Coordinates });
 
     if (!cannon)
-        return console.warn('cannon is', undefined);
+        return typeof Changed === 'undefined' || console.warn('cannon is', undefined);
 
     let promise = Changed();
     if (promise)
@@ -86,7 +86,7 @@ function OnRender() {
         });
     else {
         promise = Promise.resolve();
-        console.warn('Changed returned undefined');
+        console.warn('Changed returned', undefined);
     }
     promise.finally(() => arm.Emit('Resume'));
 
@@ -136,12 +136,10 @@ async function Test() {
 
 export const Angles = (...args) => arm.Angles(...args);
 
-const Reward = () => 0.5 - Target.position.distanceTo(arm.LastNode);
-
+const Reward = () => 0.1 - Target.position.distanceTo(arm.LastNode);
 let Last = 0;
 
 function Reward2() {
-
     const [z] = cannon.CannonRotation;
     const reward = Last - z;
     Last = z;
@@ -152,8 +150,7 @@ function Reward2() {
     return reward;
 }
 
-let Break, actionPerStep = 1,
-    steps = 0;
+let Break, actionPerStep = 1;
 
 function EmitFactory(socket) {
     const Emit = socket.emit.bind(socket, 'Container');
@@ -195,8 +192,9 @@ async function Ep(Emit, EmitPromise, stddev = StdDev()) {
         .map(x => Math.Clip(x, -1, 1));
 
     const reward = Reward();
+
     if (reward > 0)
-        return;
+        return [undefined, reward, ];
 
     for (let i = 0; i < actionPerStep; i++) {
         const promise = cannon && new Promise(resolve => arm.On('Resume', resolve));
@@ -210,17 +208,19 @@ async function Ep(Emit, EmitPromise, stddev = StdDev()) {
         reward,
         next_state: state,
     };
-    Log({ angles, ...obj });
+    Log('angles', angles, obj);
 
     Emit('model', 'store_transition', ...Object.values(obj));
 
     stddev = await EmitPromise('Learn', stddev);
     Log({ stddev });
-    return StdDev(stddev);
+    return [StdDev(stddev), reward];
 }
 
+
 async function main(socket) {
-    if (!socket) return;
+    if (!socket)
+        return;
     Break = false;
 
     Log('Handler attatched to socket');
@@ -233,22 +233,26 @@ async function main(socket) {
     const EpBinded = Ep.bind(undefined, ...EmitFactory(socket));
     const errors = [];
 
+    let steps = 0;
     for (let ep = 0;; ep++) {
         let stddev;
 
         arm.Reset();
 
-        for (let step = 0;; step++) {
+        let step;
+        let rewards = 0;
+
+        for (step = 0; step < 300; step++) {
             if (Break) {
                 Break = false;
                 return;
             }
-            const { Steps } = window;
-            Log({ ep, step, Steps });
-            window.Steps++;
+            Log({ ep, step, steps });
+            steps++;
 
             try {
-                const _stddev = await EpBinded(stddev);
+                const [_stddev, reward] = await EpBinded(stddev);
+                rewards += reward;
                 if (!_stddev)
                     break;
                 stddev = _stddev;
@@ -268,49 +272,71 @@ async function main(socket) {
             }
 
             //await new Promise(resolve => setTimeout(resolve, 10));
+
         }
+
+        Result.Steps.push(step);
+        Result.Rewards.push(rewards);
+
     }
 
     socket.close();
 }
 
+function Result() {
+    const { Steps, Rewards } = Result;
+    Log('Steps', Steps);
+    Log('Rewards', Rewards);
+
+    const Zipped = Steps.map(function(x, i) {
+        return [x, Rewards[i]];
+    });
+
+    Log(Zipped);
+    localStorage.setItem('Result', JSON.stringify(Zipped));
+}
 
 
 UI.then(UI => ({
-    UI,
-    Steps: 0,
+        UI,
+        Steps: 0,
 
-    UpdateArm,
-    Reward,
-    IDBUpload: typeof IDBUpload === 'undefined' || IDBUpload,
+        UpdateArm,
+        Reward,
+        IDBUpload: typeof IDBUpload === 'undefined' || IDBUpload,
 
-    OBJLoader: Path => OBJLoader(Path, UI.ObjFaces.value).then(object => CannonObject(object)),
+        OBJLoader: Path => OBJLoader(Path, UI.ObjFaces.value).then(object => CannonObject(object)),
 
+        Run: () => {
+            const Options = {
+                Actions: arm.lengths.length,
+                States: state.length
+            };
+            Log('Options', Options);
+            Docker(Options)
+                .then(main);
+        },
 
-    Run: () => {
-        const Options = {
-            Actions: arm.lengths.length,
-            States: state.length
-        };
-        Log('Options', Options);
-        Docker(Options, UI.Subdomain.value)
-            .then(main);
-    },
+        Resume: () => DockerHandler().then(main),
 
-    Resume: () => DockerHandler().then(main),
+        Reset: () => {
+            Break = true;
+            window.Steps = 0;
+            DockerReset();
+            arm.Reset();
+        },
 
-    Reset: () => {
-        Break = true;
-        window.Steps = 0;
-        DockerReset();
-        arm.Reset();
-    },
+        Result: Object.assign(Result, { Steps: [], Rewards: [], }),
 
+    })).then(obj => {
+        console.log(obj);
+        Object.assign(window, obj);
+        return EndpointsInit(obj.UI.Endpoint);
+    })
 
-})).then(obj => {
-    console.log(obj);
-    Object.assign(window, obj);
-}).catch(console.error);
+    .then(Endpoint)
+
+    .catch(console.error);
 
 {
     const ToggleVisual = bool => {
@@ -323,7 +349,7 @@ UI.then(UI => ({
     const ActionPerStep = _actionPerStep => actionPerStep = _actionPerStep;
 
     UIHandlers([
-        () => ({ Subdomain }),
+        () => ({ Endpoint }),
         () => ({ ToggleVisual }),
         () => ({ ActionPerStep }),
         () => ({ ArmSpeed }),
@@ -342,7 +368,10 @@ window.addEventListener('DOMContentLoaded', async function() {
 
     (typeof CannonObject === 'undefined' ? Promise.resolve() : CannonObject().then(_cannon => cannon = _cannon))
 
-    .then(() => (typeof DockerHandler === 'undefined' ? UpdateArm() : UpdateArm()
-        .then(DockerHandler)
-        .then(main)));
+    .then((promise = UpdateArm()) => promise.then(DockerHandler)
+        .then(main)
+        .catch(error => {
+            console.log(error);
+            return promise;
+        }));
 });

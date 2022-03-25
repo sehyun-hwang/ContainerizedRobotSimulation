@@ -1,12 +1,12 @@
-const BASE = 'https://cdn.jsdelivr.net/npm/three/examples/jsm/';
+const BASE = 'https://cdn.jsdelivr.net/npm/three@0.113/examples/jsm/';
 
 const Paths = {
     TransformControls: "controls/TransformControls.js",
     OBB: 'math/OBB.js',
     ParametricGeometries: 'geometries/ParametricGeometries.js',
     MeshSurfaceSampler: 'math/MeshSurfaceSampler.js',
-    CSG: './build/web_modules/three-csg.js',
-    CANNON: 'https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js',
+    CSG: './build/_snowpack/pkg/three-csg.js',
+    CANNON: 'https://cdn.jsdelivr.net/npm/cannon/build/cannon.min.js',
     OBJLoader: 'loaders/OBJLoader.js',
     ArmBones: './ArmBones.js',
 };

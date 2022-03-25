@@ -5,7 +5,7 @@ from env import Env
 from ddpg import DDPG
 import config
 
-from os import getuid as UID, environ
+from os import getppid, getenv
 from os.path import isfile
 from random import random, randrange
 
@@ -16,7 +16,7 @@ from base64 import b64decode
 import json
 import numpy as np
 
-PARAMS = json.loads(b64decode(environ.get("PARAMS", 'e30=')))
+PARAMS = json.loads(b64decode(getenv("PARAMS", 'e30=')))
 print(PARAMS)
 
 MODEL_PATH = 'Model'
@@ -114,7 +114,7 @@ def main():
 
     host = Host()
     host = 'http://' + ('localhost' if 'hwangsehyun' in host else 'express.network') + \
-    (':8080' if UID() else '') + f"?Container={host.replace('.network', '')}&KeepAlive=1"
+    (':8080' if getppid() >2 else '') + f"?Container={host.replace('.network', '')}&KeepAlive=1"
     print('Host:', host)
 
     io.connect(host + namespace,

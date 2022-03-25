@@ -30,8 +30,9 @@
     <body class="flex flex-col h-screen overflow-hidden">
         <div class="flex-none flex py-3 bg-gray-200">
             <div class="flex flex-col text-white">
-                <button onclick="Run()" class="m-4 px-2 py-4 shadow rounded-full bg-green-500 hover:bg-green-400 ">Run</button>
+                <button onclick="Run()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-green-500 hover:bg-green-400 ">Run</button>
                 <button onclick="Resume()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-blue-500 hover:bg-blue-400">Resume</button>
+                <button onclick="Result()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-blue-500 hover:bg-blue-400">Result</button>
                 <button onclick="Reset()" class="m-4 mb-0 px-2 py-4 shadow rounded-full bg-yellow-500 hover:bg-yellow-400">Reset</button>
             </div>
 
@@ -39,16 +40,13 @@
                 <div id="UIMode" class="absolute w-full h-full pr-4 overflow-y-scroll max-h-full">
                     <accordion-shadow title="RL Server Settings">
                         <label>Server Endpoint</label>
-                        <select id="Subdomain" class="w-full mb-5 px-4 py-2 appearance-none bg-white border border-gray-400 hover:border-gray-500 rounded shadow">
-                            <option>yonsei</option>
-                            <option>kbdlab</option>
-                            <option>iptime</option>
+                        <select id="Endpoint" class="w-full mb-5 px-4 py-2 appearance-none bg-white border border-gray-400 hover:border-gray-500 rounded shadow">
                         </select>
                     </accordion-shadow>
 
                     <accordion-shadow title="Arm Settings">
                         <label>Speed of the Arm</label>
-                        <input id="ArmSpeed" type="range" value="3" step="0.01" max="10" />
+                        <input id="ArmSpeed" type="range" value="5" step="0.01" max="10" />
                         <label>Action Per Step of the Arm</label>
                         <input id="ActionPerStep" type="range" value="1" min="1" max="10" />
 
