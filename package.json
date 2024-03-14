@@ -5,13 +5,13 @@
         "apollo-link": "^1.0.3",
         "apollo-link-http": "^1.2.0",
         "aws-appsync": "^4.0.0",
-        "aws-sdk": "^2.141.0",
+        "aws-sdk": "^2.814.0",
         "es6-promise": "^4.1.1",
         "graphql": "^15.3.0",
         "graphql-tag": "^2.5.0",
         "isomorphic-fetch": "^2.2.1",
         "three-csg": "https://github.com/aegggsehyun1994/ThreeCSG#patch-1",
-        "ws": "^7.3.1"
+        "ws": "^7.4.6"
     },
     "type": "module",
     "scripts": {
